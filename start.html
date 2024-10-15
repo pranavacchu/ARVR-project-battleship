@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600&display=swap" rel="stylesheet">
 
     <style>
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
             height: 100%;
@@ -16,6 +18,7 @@
             color: #ffffff;
             overflow: hidden;
         }
+
         #scene-container {
             position: fixed;
             top: 0;
@@ -24,6 +27,7 @@
             height: 100%;
             z-index: -1;
         }
+
         #ui-container {
             position: absolute;
             top: 50%;
@@ -32,6 +36,7 @@
             text-align: center;
             z-index: 1;
         }
+
         h1 {
             font-size: 10em;
             font-family: 'Teko', sans-serif;
@@ -45,14 +50,17 @@
             margin-bottom: 10px;
             line-height: 1;
         }
+
         p {
             font-size: 1.5em;
             margin-bottom: 30px;
-            background: linear-gradient(to top, #8aa9b5, #ffffff); /* Light gradient from top to bottom */
+            background: linear-gradient(to top, #8aa9b5, #ffffff);
+            /* Light gradient from top to bottom */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
+
         #play-button {
             padding: 15px 40px;
             font-size: 1.4em;
@@ -63,14 +71,18 @@
             cursor: pointer;
             transition: background 0.4s ease, transform 0.2s;
             box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.5);
+            margin: 7px; /* Added margin for spacing */
         }
+
         #play-button:hover {
             background: linear-gradient(135deg, #0f4b94, #086882);
             transform: translateY(-5px);
         }
+
         #play-button:active {
             transform: scale(0.98);
         }
+
         #version {
             position: absolute;
             bottom: 10px;
@@ -78,8 +90,107 @@
             font-size: 0.8em;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
+
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 0 10px;
+            font-size: 1.2em;
+            color: white;
+            background-color: rgba(0, 100, 200, 0.6);
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background-color: rgba(0, 150, 250, 0.8);
+            transform: scale(1.05);
+        }
+
+        #rules-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: none; /* Hides the popup initially */
+        }
+        
+
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 30, 30, 0.9);
+            color: #b4f6f6;
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 60%;
+            max-height: 80%; /* Increased max-height for better space utilization */
+            overflow-y: hidden; /* Removed scroll bar */
+            border: 2px solid #00FFFF;
+            box-shadow: 0 0 20px rgba(79, 173, 173, 0.3);
+        }
+        /* New Styles for Professional Look */
+        
+        .popup-content h2 {
+            font-family: 'Teko', sans-serif;
+            font-size: 3em;
+            font-weight: 600;
+            background: linear-gradient(to bottom, #dceaf3, #0582a5); /* Same gradient as "Battleship" logo */
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+    
+        .popup-content ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+    
+        .popup-content li {
+            font-size: 1.5em;
+            margin: 10px 0;
+            background: linear-gradient(to top, #8aa9b5, #ffffff); /* Gradient for text */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+    
+        .popup-content button {
+            padding: 12px 30px;
+            font-size: 1.4em;
+            background: linear-gradient(135deg, #448698, #041e3d); /* Same style as Play button */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.4s ease, transform 0.2s;
+            box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.5);
+            display: block;
+            margin: -20px auto 0; /* Reduced top margin */
+        }
+    
+        .popup-content button:hover {
+            background: linear-gradient(135deg, #0f4b94, #086882);
+            transform: translateY(-5px);
+        }
+    
+        .popup-content button:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
+
 <body>
     <div id="scene-container"></div>
 
@@ -87,13 +198,38 @@
         <h1>BATTLESHIP</h1>
         <p>ENGAGE IN AN EPIC NAVAL WARFARE</p>
         <a href="game.html"><button id="play-button">PLAY</button></a>
+        <a href="#" onclick="showRules(); return false;"><button id="play-button">RULES</button></a>
     </div>
-
+    <div id="rules-popup">
+        <div class="popup-content">
+            <h2>Battleship Rules</h2>
+            <ul>
+                <li><strong>Ship Placement:</strong> Players place ships on a grid, hidden from their opponent.</li>
+                <li><strong>Turn-Based Attacks:</strong> Players take turns selecting coordinates to attack.</li>
+                <li><strong>Hit or Miss:</strong> A hit marks a ship; a miss is marked differently.</li>
+                <li><strong>Objective:</strong> Sink all opponent's ships by targeting their locations.</li>
+                <li><strong>Victory Condition:</strong> The first player to sink all enemy ships wins.</li>
+            </ul>
+            
+            
+            <button class="game-button" onclick="hideRules()">BACK</button>
+        </div>
+    </div>
     <div id="version">
         © 2024 BattleshipGames<br>
         An ARVR project
     </div>
 
     <script type="module" src="startAnimation.js"></script>
+    <script>
+        function showRules() {
+            document.getElementById('rules-popup').style.display = 'block';
+        }
+
+        function hideRules() {
+            document.getElementById('rules-popup').style.display = 'none';
+        }
+    </script>
 </body>
+
 </html>
