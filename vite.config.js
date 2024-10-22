@@ -7,10 +7,12 @@ export default defineConfig({
     assetsDir: 'assets',
     rollupOptions: {
       input: {
-        main: '/index.html',
-        game: '/game.html',
-        game2: '/game2.html'
+        main: 'index.html',
+        start: 'start.html',
+        game: 'game.html',
+        game2: 'game2.html'
       }
-    }
+    },
+    sourcemap: true
   }
 })

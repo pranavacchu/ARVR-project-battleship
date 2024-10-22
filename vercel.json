@@ -1,5 +1,8 @@
 {
     "rewrites": [
+      { "source": "/start", "destination": "/start.html" },
+      { "source": "/game", "destination": "/game.html" },
+      { "source": "/game2", "destination": "/game2.html" },
       { "source": "/(.*)", "destination": "/index.html" }
     ],
     "buildCommand": "npm run build",
