@@ -9,7 +9,6 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 
 const occupiedCoordinates = {};
 let previousPosition = null;
-// Scene, Camera, Renderer setup remains the same
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -24,14 +23,14 @@ renderer.toneMappingExposure = 0.5;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
-// Add these variables at the top of your file, after other declarations
+
 let selectedShip = null;
 let isDragging = false;
 let isRightMouseDown = false;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// Post-processing setup remains the same
+
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
@@ -448,30 +447,51 @@ controls.mouseButtons = {
 
 function snapToGrid(position) {
   const halfBoxSize = boxSize / 2;
+  const halfGridSize = gridSize / 2;
+  
+  // Clamp the position within the grid bounds
+  const clampedX = Math.max(-halfGridSize + halfBoxSize, Math.min(halfGridSize - halfBoxSize, position.x));
+  const clampedZ = Math.max(-halfGridSize + halfBoxSize, Math.min(halfGridSize - halfBoxSize, position.z));
+  
   return new THREE.Vector3(
-    Math.round((position.x - halfBoxSize) / boxSize) * boxSize + halfBoxSize,
+    Math.round((clampedX - halfBoxSize) / boxSize) * boxSize + halfBoxSize,
     position.y,
-    Math.round((position.z - halfBoxSize) / boxSize) * boxSize + halfBoxSize
+    Math.round((clampedZ - halfBoxSize) / boxSize) * boxSize + halfBoxSize
   );
 }
 
 // Function to check if position is within grid bounds
-function isWithinGridBounds(position, shipSize = 1) {
+function isWithinGridBounds(position, ship) {
   const halfGridSize = gridSize / 2;
-  const shipLength = shipSize * boxSize;
+  const bbox = new THREE.Box3().setFromObject(ship);
+  const shipHalfWidth = (bbox.max.x - bbox.min.x) / 2;
+  const shipHalfLength = (bbox.max.z - bbox.min.z) / 2;
+
   return (
-    Math.abs(position.x) <= halfGridSize - boxSize / 2 &&
-    Math.abs(position.z) <= halfGridSize - shipLength / 2
+    position.x - shipHalfWidth >= -halfGridSize &&
+    position.x + shipHalfWidth <= halfGridSize &&
+    position.z - shipHalfLength >= -halfGridSize &&
+    position.z + shipHalfLength <= halfGridSize
   );
 }
-
+function getShipSize(ship) {
+  const bbox = new THREE.Box3().setFromObject(ship);
+  const size = bbox.getSize(new THREE.Vector3());
+  const center = bbox.getCenter(new THREE.Vector3());
+  return {
+    width: Math.round(size.x / boxSize),
+    length: Math.round(size.z / boxSize),
+    centerOffsetX: center.x - ship.position.x,
+    centerOffsetZ: center.z - ship.position.z
+  };
+}
 
 // Function to check if a position is occupied
 function isPositionOccupied(position, shipSize = 1) {
   const snappedPosition = snapToGrid(position);
   for (let i = 0; i < shipSize; i++) {
     const key = `${snappedPosition.x},${snappedPosition.z + i * boxSize}`;
-    if (occupiedCoordinates[key]) {
+    if (occupiedCoordinates[key] && occupiedCoordinates[key] !== selectedShip) {
       return true;
     }
   }
@@ -481,8 +501,8 @@ function isPositionOccupied(position, shipSize = 1) {
 // Function to mark a position as occupied
 function markPositionAsOccupied(ship) {
   const position = snapToGrid(ship.position);
-  const shipSize = Math.round(ship.scale.z * 3); // Assuming the ship's length is 3 grid spaces
-  for (let i = 0; i < shipSize; i++) {
+  const shipSize = getShipSize(ship);
+  for (let i = 0; i < shipSize.length; i++) {
     const key = `${position.x},${position.z + i * boxSize}`;
     occupiedCoordinates[key] = ship;
   }
@@ -491,8 +511,8 @@ function markPositionAsOccupied(ship) {
 // Function to remove a ship from occupied positions
 function removeShipFromOccupiedPositions(ship) {
   const position = snapToGrid(ship.position);
-  const shipSize = Math.round(ship.scale.z * 3);
-  for (let i = 0; i < shipSize; i++) {
+  const shipSize = getShipSize(ship);
+  for (let i = 0; i < shipSize.length; i++) {
     const key = `${position.x},${position.z + i * boxSize}`;
     delete occupiedCoordinates[key];
   }
@@ -558,29 +578,15 @@ function onMouseMove(event) {
 
     if (intersects.length > 0) {
       const newPosition = snapToGrid(intersects[0].point);
-      // Constrain movement within the grid
-      newPosition.x = Math.max(
-        -gridSize / 2,
-        Math.min(gridSize / 2, newPosition.x)
-      );
-      newPosition.z = Math.max(
-        -gridSize / 2,
-        Math.min(gridSize / 2, newPosition.z)
-      );
-      selectedShip.position.set(
-        newPosition.x,
-        selectedShip.position.y,
-        newPosition.z
-      );
-
-      if (isWithinGridBounds(newPosition) && !isPositionOccupied(newPosition)) {
+      
+      // Check if the new position is within grid bounds
+      if (isWithinGridBounds(newPosition, selectedShip) && !isPositionOccupied(newPosition, getShipSize(selectedShip).length)) {
         // Remove the ship from its current position
-        occupiedPositions.delete(
-          `${selectedShip.position.x},${selectedShip.position.z}`
-        );
+        removeShipFromOccupiedPositions(selectedShip);
+        
         // Update the ship's position
-        selectedShip.position.x = newPosition.x;
-        selectedShip.position.z = newPosition.z;
+        selectedShip.position.set(newPosition.x, selectedShip.position.y, newPosition.z);
+        
         // Mark the new position as occupied
         markPositionAsOccupied(selectedShip);
       }
@@ -592,21 +598,35 @@ function onMouseMove(event) {
 
 function onKeyDown(event) {
   if (event.code === 'Space' && selectedShip) {
-    // Store the original rotation
+    // Store the original rotation and position
     const originalRotation = selectedShip.rotation.y;
+    const originalPosition = selectedShip.position.clone();
     
-    // Rotate the selected ship by 90 degrees clockwise
+    // Temporarily rotate the ship
     selectedShip.rotation.y -= Math.PI / 2;
     
-    // Check if the new rotated position causes an overlap
-    if (checkShipOverlap(selectedShip)) {
-      // If there's an overlap, show the alert and revert the rotation
-      alert("Invalid rotation. Ships cannot overlap.");
-      selectedShip.rotation.y = originalRotation;
-    } else {
-      // If no overlap, update the occupied positions
+    // Get the new bounding box after rotation
+    const bbox = new THREE.Box3().setFromObject(selectedShip);
+    const shipSize = {
+      width: Math.round((bbox.max.x - bbox.min.x) / boxSize),
+      length: Math.round((bbox.max.z - bbox.min.z) / boxSize)
+    };
+    
+    // Check if the rotated ship is within bounds
+    const isWithinBounds = isWithinGridBounds(selectedShip.position, selectedShip);
+    
+    // Check for collisions with other ships
+    const hasCollision = checkShipOverlap(selectedShip);
+    
+    if (isWithinBounds && !hasCollision) {
+      // If rotation is valid, update occupied positions
       removeShipFromOccupiedPositions(selectedShip);
       markPositionAsOccupied(selectedShip);
+    } else {
+      // If rotation is not valid, revert to original rotation and position
+      selectedShip.rotation.y = originalRotation;
+      selectedShip.position.copy(originalPosition);
+      alert("Invalid rotation. The ship would go outside the grid or collide with another ship.");
     }
   }
 }

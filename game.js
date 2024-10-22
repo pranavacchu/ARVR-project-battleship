@@ -4,6 +4,8 @@ import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+let enemyText;
+
 
 // Scene, Camera, Renderer setup
 const scene = new THREE.Scene();
@@ -122,6 +124,7 @@ function createGrid(size, divisions, color) {
     return gridGroup;
 }
 
+
 // Create grids with 8x8 divisions
 const smallGrid = createGrid(200, 8, 0x000000);
 smallGrid.position.set(150, 0, 0);  // Moved to the right
@@ -193,21 +196,41 @@ loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', 
     const textGeometry = new TextGeometry('Enemy Coordinates', {
         font: font,
         size: 20,
-        height: 5,
+        height: 2,
         curveSegments: 12,
-        bevelEnabled: false
+        bevelEnabled: true,
+        bevelThickness: 0.5,
+        bevelSize: 0.3,
+        bevelSegments: 3
     });
 
-    const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White color
-    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+    // Center the text geometry
+    textGeometry.computeBoundingBox();
+    const centerOffset = new THREE.Vector3();
+    centerOffset.x = -(textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x) / 2;
+    textGeometry.translate(centerOffset.x, 0, 0);
 
-    // Position the text above the large grid, moved slightly back
-    textMesh.position.set(-280, 20, -200);
-    textMesh.rotation.x = -Math.PI / 4;  // Tilt the text for better visibility
+    // Create material with emissive properties for better visibility
+    const textMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x000000,
+        emissive: 0x444444,
+        side: THREE.DoubleSide,
+        flatShading: true
+    });
 
-    scene.add(textMesh);
+    // Create the text mesh
+    enemyText = new THREE.Mesh(textGeometry, textMaterial);
+    
+    // Create a container for the text that will handle positioning
+    const textContainer = new THREE.Group();
+    textContainer.add(enemyText);
+    
+    // Initial position - higher above water
+    textContainer.position.set(-150, 40, -210); // Increased y value to 40
+    
+    // Add container to scene
+    scene.add(textContainer);
 });
-
 // Create Battleship logo
 const logo = document.createElement('div');
 logo.textContent = 'BATTLESHIP';
@@ -233,15 +256,38 @@ function animate() {
     water.material.uniforms['time'].value += 1.0 / 60.0;
     controls.update();
 
-    // Update grid square visibility
+    // Update text rotation if it exists
+    if (enemyText) {
+        // Get camera position
+        const cameraPosition = camera.position;
+        
+        // Calculate angle to camera in XZ plane
+        const angleToCamera = Math.atan2(
+            cameraPosition.x - enemyText.parent.position.x,
+            cameraPosition.z - enemyText.parent.position.z
+        );
+
+        // Update text parent rotation
+        enemyText.parent.rotation.y = angleToCamera;
+        
+        // Maintain a constant upward tilt
+        enemyText.rotation.x = -Math.PI / 8;
+        
+        // Ensure text maintains height above water
+        enemyText.parent.position.y = 40;
+    }
+
+    // Rest of your existing animate code
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(gridSquares);
+    
     gridSquares.forEach(square => {
         if (square.visible && square.material.color.getHex() !== 0xffffff) {
             square.material.opacity = 0.2;
             square.visible = false;
         }
     });
+    
     if (intersects.length > 0) {
         const hoveredSquare = intersects[0].object;
         if (hoveredSquare.material.color.getHex() !== 0xffffff) {
@@ -252,7 +298,6 @@ function animate() {
 
     renderer.render(scene, camera);
 }
-
 // Handle window resizing
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
