@@ -4,6 +4,8 @@ import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import ShipStore from './ShipStore.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 let enemyText;
 
 
@@ -16,17 +18,18 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.5;
 document.body.appendChild(renderer.domElement);
 
-camera.position.set(0, 200, 400);
+camera.position.set(-100, 200, 400);
 camera.lookAt(0, 0, 0);
 
 // Orbit Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.05;
+controls.dampingFactor = 0.05;  // Reduced from 0.05 for smoother movement
 controls.screenSpacePanning = true;
 controls.minDistance = 50;
-controls.maxDistance = 500;
+controls.maxDistance = 800;    // Increased from 500 for more zoom out range
 controls.maxPolarAngle = Math.PI / 2;
+controls.rotateSpeed = 0.5; 
 
 // Lighting
 const ambientLight = new THREE.AmbientLight(0x404040, 1.0);
@@ -126,11 +129,11 @@ function createGrid(size, divisions, color) {
 
 
 // Create grids with 8x8 divisions
-const smallGrid = createGrid(200, 8, 0x000000);
+const smallGrid = createGrid(400, 8, 0x000000);
 smallGrid.position.set(150, 0, 0);  // Moved to the right
 
-const largeGrid = createGrid(300, 8, 0x000000);
-largeGrid.position.set(-150, 0, 0);  // Moved to the left
+const largeGrid = createGrid(400, 8, 0x000000);
+largeGrid.position.set(-330, 0, 0);  // Moved to the left
 
 // Add grids to the scene
 scene.add(smallGrid);
@@ -138,6 +141,8 @@ scene.add(largeGrid);
 
 // Create grid squares for selection
 function createGridSquares() {
+    const gridSize = 400; // Match the new grid size
+    const boxSize = gridSize / divisions;
     for (let i = 0; i < divisions; i++) {
         for (let j = 0; j < divisions; j++) {
             const squareGeometry = new THREE.PlaneGeometry(boxSize, boxSize);
@@ -150,7 +155,7 @@ function createGridSquares() {
             const square = new THREE.Mesh(squareGeometry, squareMaterial);
             square.rotation.x = -Math.PI / 2;
             square.position.set(
-                (i - divisions / 2 + 0.5) * boxSize - 150,
+                (i - divisions / 2 + 0.5) * boxSize - 330,
                 0.2,
                 (j - divisions / 2 + 0.5) * boxSize
             );
@@ -226,7 +231,7 @@ loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', 
     textContainer.add(enemyText);
     
     // Initial position - higher above water
-    textContainer.position.set(-150, 40, -210); // Increased y value to 40
+    textContainer.position.set(-350, 40, -230); // Increased y value to 40
     
     // Add container to scene
     scene.add(textContainer);
@@ -304,7 +309,40 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
+function loadStoredShips() {
+    const loader = new GLTFLoader();
+    const shipData = ShipStore.getShips();
+    
+    shipData.forEach(shipInfo => {
+        loader.load(shipInfo.modelPath, (gltf) => {
+            const ship = gltf.scene;
+            
+            // Set position
+            ship.position.set(
+                shipInfo.position.x + 150,  // Offset to match small grid position
+                shipInfo.position.y,
+                shipInfo.position.z
+            );
+            
+            // Set rotation
+            ship.rotation.set(
+                shipInfo.rotation.x,
+                shipInfo.rotation.y,
+                shipInfo.rotation.z
+            );
+            
+            // Set scale
+            ship.scale.set(
+                shipInfo.scale.x,
+                shipInfo.scale.y,
+                shipInfo.scale.z
+            );
+            
+            scene.add(ship);
+        });
+    });
+}
+loadStoredShips();
 // Ensure proper initial render
 renderer.render(scene, camera);
 
