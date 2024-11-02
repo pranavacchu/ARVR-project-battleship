@@ -6,6 +6,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import ShipStore from './ShipStore.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import FireBall from './FireBall.js';
 let enemyText;
 
 
@@ -175,7 +176,7 @@ function onMouseMove(event) {
 }
 
 // Mouse click event handler
-function onMouseClick(event) {
+async function onMouseClick(event) {
     if (event.button !== 0) return;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -188,6 +189,8 @@ function onMouseClick(event) {
         selectedSquare.material.color.setHex(0xffffff);
         selectedSquare.material.opacity = 0.5;
         selectedSquare.visible = true;
+        const fireball = new FireBall(scene, selectedSquare.position, boxSize);
+
     }
 }
 
