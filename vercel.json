@@ -1,12 +1,13 @@
 {
-    "rewrites": [
-      { "source": "/start", "destination": "/start.html" },
-      { "source": "/game", "destination": "/game.html" },
-      { "source": "/game2", "destination": "/game2.html" },
-      { "source": "/main", "destination": "/main.js" },
-      { "source": "/(.*)", "destination": "/index.html" }
-    ],
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
-    "framework": "vite"
-  }
+  "rewrites": [
+    { "source": "/start", "destination": "/start.html" },
+    { "source": "/game", "destination": "/game.html" },
+    { "source": "/game2", "destination": "/game2.html" },
+    { "source": "/main", "destination": "/main.js" },
+    { "source": "/:file([^/]+\\.glb)", "destination": "/:file" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite"
+}
