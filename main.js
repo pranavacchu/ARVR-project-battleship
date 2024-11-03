@@ -7,6 +7,11 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import ShipStore from './ShipStore.js';
+import boxship3Url from './3boxship.glb?url';
+import bluruDestroyerUrl from './blurudestroyer.glb?url';
+import submarineUrl from './submarine.glb?url';
+import bigShipUrl from './bigShip.glb?url';
+import maritimeDroneUrl from './maritimedrone.glb?url';
 
 const occupiedCoordinates = {};
 let previousPosition = null;
@@ -76,7 +81,7 @@ let ship, submarine;
 const loader = new GLTFLoader();
 
 loader.load(
-  'bigShip2.glb',
+  bigShipUrl,
   function (gltf) {
     const bigship = gltf.scene;
     bigship.userData.modelPath = 'bigShip2.glb';
@@ -114,7 +119,7 @@ loader.load(
 );
 
 loader.load(
-  'blurudestroyer.glb',
+  bluruDestroyerUrl,
   function (gltf) {
     const bldestroyer = gltf.scene;
     bldestroyer.userData.modelPath = 'blurudestroyer.glb';
@@ -155,7 +160,7 @@ loader.load(
 
 const occupiedPositions = new Set();
 loader.load(
-  'submarine.glb',
+  submarineUrl,
   function (gltf) {
     const submarine = gltf.scene;
     submarine.userData.modelPath = 'submarine.glb';
@@ -193,7 +198,7 @@ loader.load(
 );
 
 loader.load(
-  '3boxship.glb', // Path to the new GLB file
+  boxship3Url, // Path to the new GLB file
   function (gltf) {
     const boxShip = gltf.scene;
     boxShip.userData.modelPath = '3boxship.glb';
@@ -232,7 +237,7 @@ loader.load(
 
 // Load Maritime Drone
 loader.load(
-  'maritimedrone.glb',
+  maritimeDroneUrl,
   function (gltf) {
     const maritimeDrone = gltf.scene;
     maritimeDrone.userData.modelPath = 'maritimedrone.glb';

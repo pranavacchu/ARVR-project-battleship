@@ -4,7 +4,6 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
     rollupOptions: {
       input: {
         main: 'index.html',
@@ -14,16 +13,23 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep .glb files in root directory
+          // Keep .glb files in root
           if (assetInfo.name.endsWith('.glb')) {
             return '[name][extname]'
           }
+          // Other assets go to assets directory
           return 'assets/[name]-[hash][extname]'
         }
       }
     },
     sourcemap: true,
-    // Ensure large binary files are handled properly
+    assetsInclude: ['**/*.glb'],
     assetsInlineLimit: 0
+  },
+  server: {
+    fs: {
+      strict: false,
+      allow: ['.']
+    }
   }
 })
