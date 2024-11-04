@@ -27,6 +27,9 @@ export default defineConfig({
     assetsInlineLimit: 0
   },
   server: {
+    proxy: {
+      '/ws': 'http://localhost:8000'
+    },
     fs: {
       strict: false,
       allow: ['.']

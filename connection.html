@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game Connection</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #status {
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.2em;
+        }
+        #startButton {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">Connecting to server...</div>
+    <button id="startButton" onclick="startGame()">Start Game</button>
+
+    <script>
+        const socket = io();
+        let playerNumber = null;
+
+        socket.on('connect', () => {
+            document.getElementById('status').textContent = 'Connected to server, waiting for other player...';
+        });
+
+        socket.on('playerAssigned', (number) => {
+            playerNumber = number;
+            document.getElementById('status').textContent = `You are Player ${number}. Waiting for other player...`;
+        });
+
+        socket.on('gameStart', (message) => {
+            document.getElementById('status').textContent = message;
+            document.getElementById('startButton').style.display = 'block';
+        });
+
+        socket.on('playerLeft', (message) => {
+            document.getElementById('status').textContent = message;
+            document.getElementById('startButton').style.display = 'none';
+        });
+
+        socket.on('message', (message) => {
+            document.getElementById('status').textContent = message;
+        });
+
+        function startGame() {
+            // Redirect to your game page with the player number
+            window.location.href = `/index.html?player=${playerNumber}`;
+        }
+    </script>
+</body>
+</html>

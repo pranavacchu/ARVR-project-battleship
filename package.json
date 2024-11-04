@@ -9,11 +9,15 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "concurrently": "^9.0.1",
     "vite": "^5.4.8"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.3",
     "@types/three": "^0.169.0",
+    "express": "^4.21.1",
+    "firebase": "^11.0.1",
+    "socket.io": "^4.8.1",
     "three": "^0.169.0"
   }
 }

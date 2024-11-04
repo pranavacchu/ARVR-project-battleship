@@ -7,7 +7,7 @@
     <title>Battleship - Epic Naval Warfare</title>
     <!-- Google Font for professional, bold title -->
     <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600&display=swap" rel="stylesheet">
-
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body,
         html {
@@ -221,7 +221,42 @@
     </div>
 
     <script type="module" src="startAnimation.js"></script>
-    <script>
+    <script type="module">
+        const socket = io();
+        const playerCount = document.getElementById('count');
+        const messageBox = document.getElementById('messageBox');
+        const playButton = document.getElementById('playButton');
+        
+        playButton.addEventListener('click', () => {
+            socket.emit('joinGame');
+        });
+
+        socket.on('playerCount', (count) => {
+            playerCount.textContent = count;
+        });
+
+        socket.on('gameFull', () => {
+            showMessage('Game is full. Please try again later.');
+        });
+
+        socket.on('gameReady', (playerIds) => {
+            if (playerIds.includes(socket.id)) {
+                // Redirect to game page
+                window.location.href = '/game.html';
+            }
+        });
+
+        socket.on('playerLeft', () => {
+            showMessage('Other player disconnected.');
+        });
+
+        function showMessage(msg) {
+            messageBox.textContent = msg;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
         function showRules() {
             document.getElementById('rules-popup').style.display = 'block';
         }

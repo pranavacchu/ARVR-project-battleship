@@ -2,10 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0;url=start.html">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship - Loading</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .loading {
+            text-align: center;
+        }
+        .redirect-link {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <p>If you are not redirected, <a href="start.html">click here</a>.</p>
+    <div class="loading">
+        <h1>Loading Battleship...</h1>
+        <p>If you are not redirected, <a href="start.html" class="redirect-link">click here</a></p>
+    </div>
+    <script>
+        window.onload = () => {
+            setTimeout(() => {
+                window.location.href = 'start.html';
+            }, 2000);
+        };
+    </script>
 </body>
 </html>
