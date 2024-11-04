@@ -19,12 +19,14 @@ export default defineConfig({
           }
           // Other assets go to assets directory
           return 'assets/[name]-[hash][extname]'
-        }
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js'
       }
     },
     sourcemap: true,
     assetsInclude: ['**/*.glb'],
-    assetsInlineLimit: 0
+    assetsInlineLimit: 4096
   },
   server: {
     proxy: {
