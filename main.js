@@ -10,7 +10,7 @@ import ShipStore from './ShipStore.js';
 import boxship3Url from './3boxship.glb?url';
 import bluruDestroyerUrl from './blurudestroyer.glb?url';
 import submarineUrl from './submarine.glb?url';
-import bigShipUrl from './bigShip.glb?url';
+import bigShipUrl from './bigShip2.glb?url';
 import maritimeDroneUrl from './maritimedrone.glb?url';
 
 const occupiedCoordinates = {};
