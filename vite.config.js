@@ -13,7 +13,7 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep .glb files in root
+          // Keep .glb files in root and preserve original names
           if (assetInfo.name.endsWith('.glb')) {
             return '[name][extname]'
           }
@@ -25,8 +25,7 @@ export default defineConfig({
       }
     },
     sourcemap: true,
-    assetsInclude: ['**/*.glb'],
-    assetsInlineLimit: 4096
+    assetsInclude: ['**/*.glb']
   },
   server: {
     proxy: {
