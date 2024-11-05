@@ -17,24 +17,17 @@ export default defineConfig({
           if (assetInfo.name.endsWith('.glb')) {
             return '[name][extname]'
           }
-          // Other assets go to assets directory
-          return 'assets/[name]-[hash][extname]'
+          // Other assets with hash
+          return '[name]-[hash][extname]'
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js'
+        chunkFileNames: '[name]-[hash].js',
+        entryFileNames: '[name]-[hash].js'
       }
     },
     sourcemap: true,
-    assetsInclude: ['**/*.glb'],
-    assetsInlineLimit: 4096
-  },
-  server: {
-    proxy: {
-      '/ws': 'http://localhost:8000'
-    },
-    fs: {
-      strict: false,
-      allow: ['.']
-    }
+    // Disable inlining for GLB files
+    assetsInlineLimit: 0,
+    // Ensure GLB files are recognized
+    assetsInclude: ['**/*.glb']
   }
 })

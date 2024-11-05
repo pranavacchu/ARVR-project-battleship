@@ -5,6 +5,7 @@ class FireBall {
         this.scene = scene;
         this.targetPosition = targetPosition;
         this.boxSize = boxSize;
+        this.particles = [];
         this.createMissileExplosion();
     }
 
@@ -12,45 +13,36 @@ class FireBall {
         const missileGroup = new THREE.Group();
         this.scene.add(missileGroup);
 
-        // Enhanced missile geometry and material
-        const missileGeometry = new THREE.ConeGeometry(2.5, 12, 32); // Larger size
+        const missileGeometry = new THREE.ConeGeometry(2.5, 12, 32);
         const missileMaterial = new THREE.MeshStandardMaterial({
             color: 0x444444,
             metalness: 0.9,
             roughness: 0.2,
-            envMapIntensity: 0.5,
-            normalScale: new THREE.Vector2(0.5, 0.5)
+            envMapIntensity: 0.5
         });
         const missile = new THREE.Mesh(missileGeometry, missileMaterial);
-        
-        // Starting position with more dramatic launch
+
         missile.position.set(
-            this.targetPosition.x, 
-            400, // Higher starting point
+            this.targetPosition.x,
+            400,
             this.targetPosition.z
         );
         missile.rotation.x = Math.PI;
         missileGroup.add(missile);
 
-        // Enhanced missile trajectory and descent
         const animateMissile = () => {
-            // Faster descent with acceleration
             const baseSpeed = 0.02;
             const acceleration = 0.002;
             const currentSpeed = baseSpeed + (acceleration * performance.now() / 1000);
-            
-            missile.position.y -= currentSpeed * 250;
 
-            // More dynamic rotation
+            missile.position.y -= currentSpeed * 250;
             missile.rotation.z += 0.2;
             missile.rotation.x += 0.05;
 
-            // Add smoke trail
             this.createSmokeTrail(missile.position);
 
             if (missile.position.y <= this.targetPosition.y + 1) {
-                // Trigger advanced explosion
-                this.createAdvancedExplosion(missileGroup, missile);
+                this.createParticleExplosion(missileGroup, missile);
                 return;
             }
 
@@ -60,202 +52,27 @@ class FireBall {
         animateMissile();
     }
 
-    createSmokeTrail(position) {
-        const smokeTrailGeometry = new THREE.BufferGeometry();
-        const smokeTrailCount = 20;
-        const smokePosArray = new Float32Array(smokeTrailCount * 3);
-
-        for (let i = 0; i < smokeTrailCount; i++) {
-            smokePosArray[i * 3] = position.x + (Math.random() - 0.5);
-            smokePosArray[i * 3 + 1] = position.y + (Math.random() - 0.5);
-            smokePosArray[i * 3 + 2] = position.z + (Math.random() - 0.5);
-        }
-
-        smokeTrailGeometry.setAttribute('position', new THREE.BufferAttribute(smokePosArray, 3));
-
-        const smokeTrailMaterial = new THREE.PointsMaterial({
-            color: 0x555555,
-            size: 0.3,
-            transparent: true,
-            opacity: 0.4,
-            blending: THREE.AdditiveBlending
-        });
-
-        const smokeTrail = new THREE.Points(smokeTrailGeometry, smokeTrailMaterial);
-        this.scene.add(smokeTrail);
-
-        // Fade out and remove smoke trail
-        let opacity = 0.4;
-        const animateSmokeTrail = () => {
-            opacity -= 0.01;
-            smokeTrailMaterial.opacity = opacity;
-
-            if (opacity <= 0) {
-                this.scene.remove(smokeTrail);
-            } else {
-                requestAnimationFrame(animateSmokeTrail);
-            }
-        };
-
-        animateSmokeTrail();
-    }
-
-    createAdvancedExplosion(missileGroup, missile) {
+    createParticleExplosion(missileGroup, missile) {
         const explosionGroup = new THREE.Group();
         this.scene.add(explosionGroup);
-
-        // Remove missile from scene
         missileGroup.remove(missile);
 
-        // Enhanced sparks with more dynamic behavior
-        const sparksGeometry = new THREE.BufferGeometry();
-        const sparksCount = 300; // More sparks
-        const positionArray = new Float32Array(sparksCount * 3);
-        const velocityArray = new Float32Array(sparksCount * 3);
+        // Create multiple particle systems for different effects
+        this.createFireballCore(explosionGroup);
+        this.createSecondaryExplosions(explosionGroup);
+        this.createDebrisParticles(explosionGroup);
+        this.createSmokeCloud(explosionGroup);
+        this.createSparkParticles(explosionGroup);
+        this.createGroundDust(explosionGroup);
 
-        // More complex spark generation
-        for (let i = 0; i < sparksCount; i++) {
-            positionArray[i * 3] = this.targetPosition.x;
-            positionArray[i * 3 + 1] = this.targetPosition.y;
-            positionArray[i * 3 + 2] = this.targetPosition.z;
-
-            // More spread and unpredictability
-            const angle = Math.random() * Math.PI * 2;
-            const magnitude = Math.random() * 10;
-            velocityArray[i * 3] = Math.cos(angle) * magnitude;
-            velocityArray[i * 3 + 1] = Math.abs(Math.sin(angle)) * 6;
-            velocityArray[i * 3 + 2] = Math.sin(angle) * magnitude;
-        }
-
-        sparksGeometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3));
-        
-        const sparksMaterial = new THREE.PointsMaterial({
-            color: 0xffcc00,
-            size: 1.0, // Larger sparks
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-
-        const sparkSystem = new THREE.Points(sparksGeometry, sparksMaterial);
-        explosionGroup.add(sparkSystem);
-
-        // More layered and complex explosion spheres
-        const explosionGeometries = [
-            new THREE.SphereGeometry(this.boxSize, 32, 32),
-            new THREE.SphereGeometry(this.boxSize * 0.8, 24, 24),
-            new THREE.SphereGeometry(this.boxSize * 0.6, 16, 16)
-        ];
-
-        const explosionMaterials = [
-            new THREE.MeshPhongMaterial({
-                color: 0xff4500,
-                emissive: 0xff6347,
-                emissiveIntensity: 2.5,
-                transparent: true,
-                opacity: 1,
-                blending: THREE.AdditiveBlending
-            }),
-            new THREE.MeshPhongMaterial({
-                color: 0xffaa00,
-                emissive: 0xffa500,
-                emissiveIntensity: 2,
-                transparent: true,
-                opacity: 0.8
-            }),
-            new THREE.MeshPhongMaterial({
-                color: 0xffffff,
-                emissive: 0xffffff,
-                emissiveIntensity: 1.5,
-                transparent: true,
-                opacity: 0.5
-            })
-        ];
-
-        const explosionSpheres = explosionGeometries.map((geometry, index) => {
-            const sphere = new THREE.Mesh(geometry, explosionMaterials[index]);
-            sphere.position.copy(this.targetPosition);
-            explosionGroup.add(sphere);
-            return sphere;
-        });
-
-        // Enhanced smoke system with more variation
-        const smokeGeometry = new THREE.BufferGeometry();
-        const smokeCount = 150;
-        const smokePosArray = new Float32Array(smokeCount * 3);
-        const smokeScaleArray = new Float32Array(smokeCount);
-        const smokeDriftArray = new Float32Array(smokeCount * 3);
-
-        for (let i = 0; i < smokeCount; i++) {
-            // More random distribution
-            const radius = Math.random() * this.boxSize;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-
-            smokePosArray[i * 3] = this.targetPosition.x + radius * Math.sin(phi) * Math.cos(theta);
-            smokePosArray[i * 3 + 1] = this.targetPosition.y + radius * Math.sin(phi) * Math.sin(theta);
-            smokePosArray[i * 3 + 2] = this.targetPosition.z + radius * Math.cos(phi);
-            
-            smokeScaleArray[i] = Math.random() * 1.5;
-            
-            // Drift vectors for more natural movement
-            smokeDriftArray[i * 3] = (Math.random() - 0.5) * 0.5;
-            smokeDriftArray[i * 3 + 1] = Math.random() * 0.3;
-            smokeDriftArray[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
-        }
-
-        smokeGeometry.setAttribute('position', new THREE.BufferAttribute(smokePosArray, 3));
-        smokeGeometry.setAttribute('scale', new THREE.BufferAttribute(smokeScaleArray, 1));
-        smokeGeometry.setAttribute('drift', new THREE.BufferAttribute(smokeDriftArray, 3));
-
-        const smokeMaterial = new THREE.PointsMaterial({
-            color: 0x222222,
-            size: 1.5,
-            transparent: true,
-            opacity: 0.5,
-            blending: THREE.NormalBlending
-        });
-
-        const smokeSystem = new THREE.Points(smokeGeometry, smokeMaterial);
-        explosionGroup.add(smokeSystem);
-
-        // More advanced and complex explosion animation
-        let animationProgress = 0;
+        let time = 0;
         const animateExplosion = () => {
-            animationProgress += 0.015;
+            time += 0.016;
 
-            // Spark animation with more complex physics
-            const sparksPosition = sparksGeometry.getAttribute('position');
-            for (let i = 0; i < sparksCount; i++) {
-                sparksPosition.array[i * 3] += velocityArray[i * 3] * (1 + animationProgress);
-                sparksPosition.array[i * 3 + 1] += (velocityArray[i * 3 + 1] * (1 + animationProgress)) - (9.8 * animationProgress * 0.3);
-                sparksPosition.array[i * 3 + 2] += velocityArray[i * 3 + 2] * (1 + animationProgress);
-            }
-            sparksPosition.needsUpdate = true;
-            sparksMaterial.opacity = Math.max(1 - animationProgress * 1.5, 0);
+            // Update all particle systems
+            this.updateParticleSystems(time);
 
-            // Explosion spheres with more dynamic scaling
-            explosionSpheres.forEach((sphere, index) => {
-                const scale = 1 + animationProgress * (3 - index * 0.7);
-                sphere.scale.set(scale, scale, scale);
-                sphere.material.opacity = Math.max(1 - animationProgress * (1.5 + index * 0.4), 0);
-            });
-
-            // Enhanced smoke animation with drift
-            const smokePosition = smokeGeometry.getAttribute('position');
-            const smokeScale = smokeGeometry.getAttribute('scale');
-            const smokeDrift = smokeGeometry.getAttribute('drift');
-            for (let i = 0; i < smokeCount; i++) {
-                smokePosition.array[i * 3] += smokeDrift.array[i * 3] * animationProgress;
-                smokePosition.array[i * 3 + 1] += 0.7 * animationProgress;
-                smokePosition.array[i * 3 + 2] += smokeDrift.array[i * 3 + 2] * animationProgress;
-                smokeScale.array[i] *= 1.07;
-            }
-            smokePosition.needsUpdate = true;
-            smokeScale.needsUpdate = true;
-            smokeSystem.material.opacity = Math.max(0.5 - animationProgress * 0.8, 0);
-
-            if (animationProgress < 1) {
+            if (time < 3) {
                 requestAnimationFrame(animateExplosion);
             } else {
                 this.cleanup(explosionGroup, missileGroup);
@@ -265,8 +82,396 @@ class FireBall {
         animateExplosion();
     }
 
+    createFireballCore(group) {
+        const particleCount = 4000; // Doubled particle count
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            const r = Math.random() * this.boxSize * 0.8; // Increased radius
+
+            positions[i * 3] = this.targetPosition.x;
+            positions[i * 3 + 1] = this.targetPosition.y;
+            positions[i * 3 + 2] = this.targetPosition.z;
+
+            // Increased explosion velocities
+            velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * (40 + Math.random() * 80);
+            velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * (40 + Math.random() * 80);
+            velocities[i * 3 + 2] = Math.cos(phi) * (40 + Math.random() * 80);
+
+            // Increased particle sizes
+            sizes[i] = 8 + Math.random() * 16;
+
+            // Enhanced colors for more intensity
+            const temp = Math.random();
+            colors[i * 3] = 1;                    // Red (keep at 1)
+            colors[i * 3 + 1] = 0.3 + temp * 0.2; // Green (reduced from 0.7 to create more red-orange)
+            colors[i * 3 + 2] = temp * 0.1;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+            size: 1,
+            transparent: true,
+            opacity: 1,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        group.add(particles);
+
+        this.particles.push({
+            system: particles,
+            velocities: velocities,
+            type: 'core',
+            lifetime: 0
+        });
+    }
+
+    createSecondaryExplosions(group) {
+        // Create smaller secondary explosions
+        const explosionCount = 5;
+        for (let j = 0; j < explosionCount; j++) {
+            const offset = new THREE.Vector3(
+                (Math.random() - 0.5) * this.boxSize * 2,
+                (Math.random() - 0.5) * this.boxSize * 2,
+                (Math.random() - 0.5) * this.boxSize * 2
+            );
+
+            const particleCount = 500;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+
+            for (let i = 0; i < particleCount; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+
+                positions[i * 3] = this.targetPosition.x + offset.x;
+                positions[i * 3 + 1] = this.targetPosition.y + offset.y;
+                positions[i * 3 + 2] = this.targetPosition.z + offset.z;
+
+                velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * (5 + Math.random() * 30);
+                velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * (5 + Math.random() * 30);
+                velocities[i * 3 + 2] = Math.cos(phi) * (5 + Math.random() * 30);
+
+                const temp = Math.random();
+                colors[i * 3] = 1;                    // Red (keep at 1)
+                colors[i * 3 + 1] = 0.2 + temp * 0.2; // Green (reduced from 0.5 to create more red-orange)
+                colors[i * 3 + 2] = temp * 0.02;
+                sizes[i] = 1 + Math.random() * 3;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 1,
+                transparent: true,
+                opacity: 1,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            group.add(particles);
+
+            this.particles.push({
+                system: particles,
+                velocities: velocities,
+                type: 'secondary',
+                lifetime: Math.random() * 0.2
+            });
+        }
+    }
+
+    createSmokeCloud(group) {
+        const particleCount = 2000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            const r = Math.random() * this.boxSize * 0.3;
+
+            positions[i * 3] = this.targetPosition.x;
+            positions[i * 3 + 1] = this.targetPosition.y;
+            positions[i * 3 + 2] = this.targetPosition.z;
+
+            velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * (2 + Math.random() * 8);
+            velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * (2 + Math.random() * 8) + 2;
+            velocities[i * 3 + 2] = Math.cos(phi) * (2 + Math.random() * 8);
+
+            sizes[i] = 3 + Math.random() * 6;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+            size: 1,
+            color: 0x222222,
+            transparent: true,
+            opacity: 0.2,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        group.add(particles);
+
+        this.particles.push({
+            system: particles,
+            velocities: velocities,
+            type: 'smoke',
+            lifetime: 0
+        });
+    }
+
+    createSparkParticles(group) {
+        const particleCount = 1500;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+
+            positions[i * 3] = this.targetPosition.x;
+            positions[i * 3 + 1] = this.targetPosition.y;
+            positions[i * 3 + 2] = this.targetPosition.z;
+
+            const speed = 15 + Math.random() * 50;
+            velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * speed;
+            velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed;
+            velocities[i * 3 + 2] = Math.cos(phi) * speed;
+
+            colors[i * 3] = 1;                    // Red (keep at 1)
+            colors[i * 3 + 1] = 0.3 + Math.random() * 0.2; // Green (reduced from 0.6 to create more red-orange)
+            colors[i * 3 + 2] = Math.random() * 0.1;
+
+            sizes[i] = 2 + Math.random() * 4; // Doubled from (1 + Math.random() * 2)
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+            size: 1,
+            transparent: true,
+            opacity: 1,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        group.add(particles);
+
+        this.particles.push({
+            system: particles,
+            velocities: velocities,
+            type: 'sparks',
+            lifetime: 0
+        });
+    }
+
+    createDebrisParticles(group) {
+        const particleCount = 500;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+
+            positions[i * 3] = this.targetPosition.x;
+            positions[i * 3 + 1] = this.targetPosition.y;
+            positions[i * 3 + 2] = this.targetPosition.z;
+
+            const speed = 8 + Math.random() * 12;
+            velocities[i * 3] = Math.sin(phi) * Math.cos(theta) * speed;
+            velocities[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed;
+            velocities[i * 3 + 2] = Math.cos(phi) * speed;
+
+            sizes[i] = 1 + Math.random() * 2;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+            size: 1,
+            color: 0x444444,
+            transparent: true,
+            opacity: 1
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        group.add(particles);
+
+        this.particles.push({
+            system: particles,
+            velocities: velocities,
+            type: 'debris',
+            lifetime: 0
+        });
+    }
+
+    createGroundDust(group) {
+        const particleCount = 1000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * this.boxSize;
+
+            positions[i * 3] = this.targetPosition.x;
+            positions[i * 3 + 1] = this.targetPosition.y;
+            positions[i * 3 + 2] = this.targetPosition.z;
+
+            velocities[i * 3] = Math.cos(angle) * (2 + Math.random() * 4);
+            velocities[i * 3 + 1] = 1 + Math.random() * 2;
+            velocities[i * 3 + 2] = Math.sin(angle) * (2 + Math.random() * 4);
+
+            sizes[i] = 2 + Math.random() * 4;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+            size: 1,
+            color: 0x662211,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        group.add(particles);
+
+        this.particles.push({
+            system: particles,
+            velocities: velocities,
+            type: 'dust',
+            lifetime: 0
+        });
+    }
+
+    createSmokeTrail(position) {
+        const particleCount = 20;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = position.x + (Math.random() - 0.5);
+            positions[i * 3 + 1] = position.y + (Math.random() - 0.5);
+            positions[i * 3 + 2] = position.z + (Math.random() - 0.5);
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            color: 0x662211,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending
+        });
+
+        const smoke = new THREE.Points(geometry, material);
+        this.scene.add(smoke);
+
+        let opacity = 0.4;
+        const animateSmoke = () => {
+            opacity -= 0.01;
+            material.opacity = opacity;
+
+            if (opacity <= 0) {
+                this.scene.remove(smoke);
+            } else {
+                requestAnimationFrame(animateSmoke);
+            }
+        };
+
+        animateSmoke();
+    }
+
+    updateParticleSystems(time) {
+        for (let particle of this.particles) {
+            particle.lifetime += 0.016;
+            const positions = particle.system.geometry.attributes.position.array;
+            const gravity = -9.8;
+            const drag = 0.98;
+
+            for (let i = 0; i < positions.length; i += 3) {
+                // Apply velocity
+                positions[i] += particle.velocities[i] * 0.016;
+                positions[i + 1] += particle.velocities[i + 1] * 0.016;
+                positions[i + 2] += particle.velocities[i + 2] * 0.016;
+
+                // Apply gravity to Y velocity
+                particle.velocities[i + 1] += gravity * 0.016;
+
+                // Apply drag
+                particle.velocities[i] *= drag;
+                particle.velocities[i + 1] *= drag;
+                particle.velocities[i + 2] *= drag;
+            }
+
+            particle.system.geometry.attributes.position.needsUpdate = true;
+
+            // Update opacity based on particle type and lifetime
+            switch (particle.type) {
+                case 'core':
+                    particle.system.material.opacity = Math.max(0, 1 - particle.lifetime * 2);
+                    break;
+                case 'secondary':
+                    particle.system.material.opacity = Math.max(0, 1 - particle.lifetime * 1.5);
+                    break;
+                case 'smoke':
+                    particle.system.material.opacity = Math.max(0, 0.2 - particle.lifetime * 0.1);
+                    break;
+                case 'sparks':
+                    particle.system.material.opacity = Math.max(0, 1 - particle.lifetime * 1.2);
+                    break;
+                case 'debris':
+                    particle.system.material.opacity = Math.max(0, 1 - particle.lifetime * 0.8);
+                    break;
+                case 'dust':
+                    particle.system.material.opacity = Math.max(0, 0.3 - particle.lifetime * 0.15);
+                    break;
+            }
+        }
+    }
+
     cleanup(explosionGroup, missileGroup) {
-        // Efficient group removal
         this.scene.remove(explosionGroup);
         this.scene.remove(missileGroup);
     }
