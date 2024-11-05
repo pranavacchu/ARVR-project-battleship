@@ -10,7 +10,7 @@ import ShipStore from './ShipStore.js';
 import boxship3Url from './3boxship.glb?url';
 import bluruDestroyerUrl from './blurudestroyer.glb?url';
 import submarineUrl from './submarine.glb?url';
-import bigShipUrl from './bigShip2.glb?url';
+import bigShipUrl from './bigShip.glb?url';
 import maritimeDroneUrl from './maritimedrone.glb?url';
 
 const occupiedCoordinates = {};
@@ -84,7 +84,7 @@ loader.load(
   bigShipUrl,
   function (gltf) {
     const bigship = gltf.scene;
-    bigship.userData.modelPath = 'bigShip2.glb';
+    bigship.userData.modelPath = 'bigShip.glb';
     // Set scale to fit within three grid boxes
     const desiredWidth = (boxSize * 3) / 6; // Occupy 3 grid boxes
     const bbox = new THREE.Box3().setFromObject(bigship);
