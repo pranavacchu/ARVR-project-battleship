@@ -222,49 +222,44 @@
 
     <script type="module" src="startAnimation.js"></script>
     <script type="module">
-        const socket = io();
-        const playerCount = document.getElementById('count');
-        const messageBox = document.getElementById('messageBox');
-        const playButton = document.getElementById('playButton');
-        
-        playButton.addEventListener('click', () => {
-            socket.emit('joinGame');
+        import { database } from './firebaseConfig.js';
+        import { ref, onValue, set, onDisconnect } from "firebase/database";
+      
+        const gameRef = ref(database, "game/players");
+        const playerId = `player_${Date.now()}`;
+        const playerRef = ref(database, `game/players/${playerId}`);
+      
+        // Track the number of players and add the player if space is available
+        onValue(gameRef, (snapshot) => {
+          const players = snapshot.val();
+          const playerCount = players ? Object.keys(players).length : 0;
+      
+          console.log("Current player count:", playerCount);
+      
+          if (playerCount >= 2) {
+            alert("Game is full. Please try again later.");
+          } else {
+            // Add player to the game and set up disconnection cleanup
+            set(playerRef, { joined: true }).then(() => {
+              console.log("Player added to Firebase:", playerId);
+            }).catch((error) => {
+              console.error("Error adding player:", error);
+            });
+      
+            onDisconnect(playerRef).remove().then(() => {
+              console.log("onDisconnect set for player:", playerId);
+            }).catch((error) => {
+              console.error("Error setting onDisconnect:", error);
+            });
+          }
+      
+          // Redirect when two players are connected
+          //if (playerCount === 2) {
+            //window.location.href = "/game.html";
+          //}
         });
-
-        socket.on('playerCount', (count) => {
-            playerCount.textContent = count;
-        });
-
-        socket.on('gameFull', () => {
-            showMessage('Game is full. Please try again later.');
-        });
-
-        socket.on('gameReady', (playerIds) => {
-            if (playerIds.includes(socket.id)) {
-                // Redirect to game page
-                window.location.href = '/game.html';
-            }
-        });
-
-        socket.on('playerLeft', () => {
-            showMessage('Other player disconnected.');
-        });
-
-        function showMessage(msg) {
-            messageBox.textContent = msg;
-            messageBox.style.display = 'block';
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 3000);
-        }
-        function showRules() {
-            document.getElementById('rules-popup').style.display = 'block';
-        }
-
-        function hideRules() {
-            document.getElementById('rules-popup').style.display = 'none';
-        }
-    </script>
+      </script> 
+      
 </body>
 
 </html>
