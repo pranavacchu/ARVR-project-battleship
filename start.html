@@ -222,44 +222,27 @@
 
     <script type="module" src="startAnimation.js"></script>
     <script type="module">
-        import { database } from './firebaseConfig.js';
-        import { ref, onValue, set, onDisconnect } from "firebase/database";
-      
-        const gameRef = ref(database, "game/players");
-        const playerId = `player_${Date.now()}`;
-        const playerRef = ref(database, `game/players/${playerId}`);
-      
-        // Track the number of players and add the player if space is available
-        onValue(gameRef, (snapshot) => {
-          const players = snapshot.val();
-          const playerCount = players ? Object.keys(players).length : 0;
-      
-          console.log("Current player count:", playerCount);
-      
-          if (playerCount >= 2) {
-            alert("Game is full. Please try again later.");
-          } else {
-            // Add player to the game and set up disconnection cleanup
-            set(playerRef, { joined: true }).then(() => {
-              console.log("Player added to Firebase:", playerId);
-            }).catch((error) => {
-              console.error("Error adding player:", error);
-            });
-      
-            onDisconnect(playerRef).remove().then(() => {
-              console.log("onDisconnect set for player:", playerId);
-            }).catch((error) => {
-              console.error("Error setting onDisconnect:", error);
-            });
-          }
-      
-          // Redirect when two players are connected
-          //if (playerCount === 2) {
-            //window.location.href = "/game.html";
-          //}
-        });
-      </script> 
-      
+        import gameManager from './gameManager.js';
+    
+        async function initializeGame() {
+            const success = await gameManager.initialize();
+            if (success) {
+                // Set up player change listener
+                gameManager.onPlayersChange((players) => {
+                    const playerCount = Object.keys(players).length;
+                    console.log("Current player count:", playerCount);
+                    
+                    // Only redirect if we have exactly 2 players
+                    if (playerCount === 2) {
+                        gameManager.updatePlayerPage('/game.html');
+                        window.location.href = "/game.html";
+                    }
+                });
+            }
+        }
+    
+        initializeGame();
+    </script>
 </body>
 
 </html>

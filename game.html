@@ -11,5 +11,12 @@
 </head>
 <body>
     <script type="module" src="main.js"></script>
+    <script type="module">
+        import gameManager from './gameManager.js';
+        
+        gameManager.initialize().then(() => {
+            gameManager.updatePlayerPage('/game.html');
+        });
+    </script>
 </body>
 </html>

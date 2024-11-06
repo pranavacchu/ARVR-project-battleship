@@ -12,6 +12,11 @@ import bluruDestroyerUrl from './blurudestroyer.glb?url';
 import submarineUrl from './submarine.glb?url';
 import bigShipUrl from './bigShip.glb?url';
 import maritimeDroneUrl from './maritimedrone.glb?url';
+import gameManager from './gameManager.js';
+
+gameManager.initialize().then(() => {
+    gameManager.updatePlayerPage('/main.js');
+});
 
 const occupiedCoordinates = {};
 let previousPosition = null;

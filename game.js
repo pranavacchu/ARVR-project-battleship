@@ -7,6 +7,13 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import ShipStore from './ShipStore.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import FireBall from './FireBall.js';
+import gameManager from './gameManager.js';
+
+gameManager.initialize().then(() => {
+    gameManager.updatePlayerPage('/game.js');
+});
+
+// Rest of your game code...
 let enemyText;
 
 // Scene, Camera, Renderer setup
