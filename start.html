@@ -7,7 +7,7 @@
     <title>Battleship - Epic Naval Warfare</title>
     <!-- Google Font for professional, bold title -->
     <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600&display=swap" rel="stylesheet">
-    <script src="/socket.io/socket.io.js"></script>
+
     <style>
         body,
         html {
@@ -221,24 +221,38 @@
     </div>
 
     <script type="module" src="startAnimation.js"></script>
+    <script>
+        function showRules() {
+            document.getElementById('rules-popup').style.display = 'block';
+        }
+
+        function hideRules() {
+            document.getElementById('rules-popup').style.display = 'none';
+        }
+    </script>
     <script type="module">
         import gameManager from './gameManager.js';
     
         async function initializeGame() {
             const success = await gameManager.initialize();
-            if (success) {
-                // Set up player change listener
-                gameManager.onPlayersChange((players) => {
-                    const playerCount = Object.keys(players).length;
-                    console.log("Current player count:", playerCount);
-                    
-                    // Only redirect if we have exactly 2 players
-                    if (playerCount === 2) {
-                        gameManager.updatePlayerPage('/game.html');
-                        window.location.href = "/game.html";
-                    }
-                });
+            if (!success && !localStorage.getItem('playerId')) {
+                // Only show the alert if this is a new player (no playerId in localStorage)
+                // and they're the third or more player trying to join
+                alert("Game is full. Please try again later.");
+                return;
             }
+    
+            // Set up player change listener
+            gameManager.onPlayersChange((players) => {
+                const playerCount = Object.keys(players).length;
+                console.log("Current player count:", playerCount);
+                
+                // Only redirect if we have exactly 2 players
+                if (playerCount === 2) {
+                    gameManager.updatePlayerPage('/game.html');
+                    window.location.href = "/game.html";
+                }
+            });
         }
     
         initializeGame();
@@ -246,3 +260,9 @@
 </body>
 
 </html>
+
+
+
+
+
+

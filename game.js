@@ -9,8 +9,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import FireBall from './FireBall.js';
 import gameManager from './gameManager.js';
 
-gameManager.initialize().then(() => {
-    gameManager.updatePlayerPage('/game.js');
+gameManager.initialize().then(async () => {
+  gameManager.updatePlayerPage('/game.js');
+  await loadStoredShips(); // Wait for ships to load before continuing
 });
 
 // Rest of your game code...
@@ -325,9 +326,9 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-function loadStoredShips() {
+async function loadStoredShips() {
   const loader = new GLTFLoader();
-  const shipData = ShipStore.getShips();
+  const shipData = await ShipStore.getShips();
 
   shipData.forEach((shipInfo) => {
     loader.load(shipInfo.modelPath, (gltf) => {
