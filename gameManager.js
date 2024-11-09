@@ -37,7 +37,7 @@ class GameManager {
         }
 
         // Check player count
-        if (Object.keys(players).length >= 2) {
+        if (Object.keys(players).length >= 3) {
             alert("Game is full. Please try again later.");
             return false;
         }
