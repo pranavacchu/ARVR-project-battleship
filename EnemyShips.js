@@ -9,6 +9,13 @@ class EnemyShips {
         this.enemyShips = [];
         this.loader = new GLTFLoader();
         this.GRID_OFFSET_X = -330; // Match the large grid position from game.js
+        this.shipSizes = {
+            'bigShip.glb': 5,
+            'blurudestroyer.glb': 4,
+            'submarine.glb': 2,
+            '3boxship.glb': 3,
+            'maritimedrone.glb': 3
+        };
     }
 
     // Get the enemy player's ID
@@ -47,15 +54,11 @@ class EnemyShips {
                 const shipData = snapshot.val();
                 if (!shipData) return;
 
-                // Remove existing enemy ships
                 this.removeExistingShips();
 
-                // Load new enemy ships
                 shipData.forEach(shipInfo => {
                     this.loader.load(shipInfo.modelPath, (gltf) => {
                         const ship = gltf.scene;
-                        
-                        // Transform position to enemy grid
                         const transformedPosition = this.transformCoordinates(shipInfo.position);
                         
                         ship.position.set(
@@ -64,21 +67,21 @@ class EnemyShips {
                             shipInfo.position.z
                         );
 
-                        // Set rotation
                         ship.rotation.set(
                             shipInfo.rotation.x,
                             shipInfo.rotation.y,
                             shipInfo.rotation.z
                         );
 
-                        // Set scale
                         ship.scale.set(
                             shipInfo.scale.x,
                             shipInfo.scale.y,
                             shipInfo.scale.z
                         );
 
-                        // Add to scene and track
+                        // Store the model path in the ship's userData
+                        ship.userData.modelPath = shipInfo.modelPath;
+
                         this.scene.add(ship);
                         this.enemyShips.push(ship);
                     });
@@ -89,6 +92,48 @@ class EnemyShips {
         }
     }
 
+    isShipAtPosition(position) {
+        const gridSize = 400;
+        const divisions = 8;
+        const boxSize = gridSize / divisions;
+        
+        // Calculate clicked grid position
+        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
+        const gridZ = Math.floor((position.z + gridSize/2) / boxSize);
+        
+        // Check each enemy ship
+        return this.enemyShips.some(ship => {
+            // Get ship metadata
+            const shipPath = ship.userData.modelPath;
+            const shipSize = this.shipSizes[shipPath];
+            const rotation = ship.rotation.y;
+            
+            // Calculate ship's grid position (center point)
+            const shipGridX = Math.floor((ship.position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
+            const shipGridZ = Math.floor((ship.position.z + gridSize/2) / boxSize);
+            
+            // Determine if ship is horizontal (rotated around Y axis)
+            // π/2 (1.57...) or 3π/2 (4.71...) indicates horizontal orientation
+            const isHorizontal = Math.abs(Math.cos(rotation)) < 0.5;
+            
+            // Calculate ship's starting position based on its size and orientation
+            const startX = isHorizontal ? shipGridX - Math.floor(shipSize/2) : shipGridX;
+            const startZ = isHorizontal ? shipGridZ : shipGridZ - Math.floor(shipSize/2);
+            
+            // Check if clicked position is within ship's occupied squares
+            for (let i = 0; i < shipSize; i++) {
+                const occupiedX = isHorizontal ? startX + i : shipGridX;
+                const occupiedZ = isHorizontal ? shipGridZ : startZ + i;
+                
+                if (gridX === occupiedX && gridZ === occupiedZ) {
+                    return true;
+                }
+            }
+            
+            return false;
+        });
+    }
+    
     // Remove existing enemy ships from scene
     removeExistingShips() {
         this.enemyShips.forEach(ship => {

@@ -10,17 +10,16 @@ import FireBall from './FireBall.js';
 import gameManager from './gameManager.js';
 import EnemyShips from './EnemyShips.js';
 
+let enemyShipsManager;
+let enemyText;  
 gameManager.initialize().then(async () => {
-  gameManager.updatePlayerPage('/game.js');
-  await loadStoredShips();
-  
-  // Initialize and load enemy ships
-  const enemyShipsManager = new EnemyShips(scene, gameManager.playerId);
-  await enemyShipsManager.loadEnemyShips();
+    gameManager.updatePlayerPage('/game.js');
+    await loadStoredShips();
+    
+    // Update this part - store the instance in our global variable
+    enemyShipsManager = new EnemyShips(scene, gameManager.playerId);
+    await enemyShipsManager.loadEnemyShips();
 });
-
-// Rest of your game code...
-let enemyText;
 
 // Scene, Camera, Renderer setup
 const scene = new THREE.Scene();
@@ -200,12 +199,22 @@ async function onMouseClick(event) {
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(gridSquares);
+  
   if (intersects.length > 0) {
-    const selectedSquare = intersects[0].object;
-    selectedSquare.material.color.setHex(0xffffff);
-    selectedSquare.material.opacity = 0.5;
-    selectedSquare.visible = true;
-    const fireball = new FireBall(scene, selectedSquare.position, boxSize);
+      const selectedSquare = intersects[0].object;
+      
+      // Check if there's a ship at this position
+      const isHit = enemyShipsManager.isShipAtPosition(selectedSquare.position);
+      
+      // Set color based on hit or miss
+      selectedSquare.material.color.setHex(isHit ? 0xff0000 : 0xffffff); // Red for hit, white for miss
+      selectedSquare.material.opacity = 0.5;
+      selectedSquare.visible = true;
+      
+      // Create fireball effect for hits
+     
+          const fireball = new FireBall(scene, selectedSquare.position, boxSize);
+      
   }
 }
 
@@ -309,19 +318,21 @@ function animate() {
   const intersects = raycaster.intersectObjects(gridSquares);
 
   gridSquares.forEach((square) => {
-    if (square.visible && square.material.color.getHex() !== 0xffffff) {
-      square.material.opacity = 0.2;
-      square.visible = false;
+    if (square.visible && 
+        square.material.color.getHex() !== 0xffffff && 
+        square.material.color.getHex() !== 0xff0000) {  // Don't hide red squares
+        square.material.opacity = 0.2;
+        square.visible = false;
     }
-  });
+});
 
-  if (intersects.length > 0) {
+if (intersects.length > 0) {
     const hoveredSquare = intersects[0].object;
-    if (hoveredSquare.material.color.getHex() !== 0xffffff) {
-      hoveredSquare.material.opacity = 0.5;
-      hoveredSquare.visible = true;
+    if (hoveredSquare.material.color.getHex() !== 0xff0000) {  // Don't change opacity of hit markers
+        hoveredSquare.material.opacity = 0.5;
+        hoveredSquare.visible = true;
     }
-  }
+}
 
   renderer.render(scene, camera);
 }
