@@ -8,10 +8,15 @@ import ShipStore from './ShipStore.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import FireBall from './FireBall.js';
 import gameManager from './gameManager.js';
+import EnemyShips from './EnemyShips.js';
 
 gameManager.initialize().then(async () => {
   gameManager.updatePlayerPage('/game.js');
-  await loadStoredShips(); // Wait for ships to load before continuing
+  await loadStoredShips();
+  
+  // Initialize and load enemy ships
+  const enemyShipsManager = new EnemyShips(scene, gameManager.playerId);
+  await enemyShipsManager.loadEnemyShips();
 });
 
 // Rest of your game code...
