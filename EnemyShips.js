@@ -112,8 +112,33 @@ class EnemyShips {
             const shipGridX = Math.floor((ship.position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
             const shipGridZ = Math.floor((ship.position.z + gridSize/2) / boxSize);
             
+            // Special handling for 3boxship
+            if (shipPath === '3boxship.glb') {
+                // Check if ship is rotated (approximately π/2 or 3π/2)
+                const isVertical = Math.abs(Math.abs(rotation) - Math.PI/2) < 0.1 || 
+                                 Math.abs(Math.abs(rotation) - (3 * Math.PI/2)) < 0.1;
+    
+                // For 3boxship, we need to check one square before and one after the center
+                if (isVertical) {
+                    // Ship is oriented vertically
+                    for (let offset = -1; offset <= 1; offset++) {
+                        if (gridX === shipGridX && gridZ === shipGridZ + offset) {
+                            return true;
+                        }
+                    }
+                } else {
+                    // Ship is oriented horizontally
+                    for (let offset = -1; offset <= 1; offset++) {
+                        if (gridX === shipGridX + offset && gridZ === shipGridZ) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            // Handle other ships
             // Determine if ship is horizontal (rotated around Y axis)
-            // π/2 (1.57...) or 3π/2 (4.71...) indicates horizontal orientation
             const isHorizontal = Math.abs(Math.cos(rotation)) < 0.5;
             
             // Calculate ship's starting position based on its size and orientation
