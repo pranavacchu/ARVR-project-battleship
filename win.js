@@ -6,6 +6,7 @@ class WinCondition {
         this.TOTAL_HIT_SQUARES = 17;
         this.messageContainer = null;
         this.initialized = false;
+        this.gameOver = false;
     }
 
     initialize(playerId) {
@@ -111,12 +112,8 @@ class WinCondition {
     }
 
     listenToHits() {
-        onValue(this.gameStateRef, async (snapshot) => {
-            const gameState = snapshot.val();
-            if (!gameState) return;
-
-            const hitsSnapshot = await get(ref(database, 'game/hits'));
-            const hitsData = hitsSnapshot.val() || {};
+        onValue(ref(database, 'game/hits'), (snapshot) => {
+            const hitsData = snapshot.val() || {};
 
             const winningPlayer = Object.entries(hitsData).find(([_, hits]) => hits >= this.TOTAL_HIT_SQUARES);
 
@@ -139,9 +136,11 @@ class WinCondition {
     }
 
     showEndGameMessage(isWinner) {
+        if (this.gameOver) return; // Add this line to prevent multiple calls
+        this.gameOver = true; // Add this line to set the flag
         this.messageContainer.style.display = 'block';
         this.messageContainer.style.animation = 'fadeIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards';
-        
+
         if (isWinner) {
             this.messageContainer.textContent = 'MISSION ACCOMPLISHED';
             this.messageContainer.style.animation = `
