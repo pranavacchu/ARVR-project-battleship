@@ -1,8 +1,8 @@
 import { database } from './firebaseConfig.js';
 import { ref, onValue } from "firebase/database";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import FireEffect from './burn.js'; // Import FireEffect
-import * as THREE from 'three'; // Import Three.js for Clock and other components if needed
+import FireEffect from './burn.js';
+import * as THREE from 'three';
 
 class EnemyShips {
     constructor(scene, playerId) {
@@ -10,7 +10,7 @@ class EnemyShips {
         this.playerId = playerId;
         this.enemyShips = [];
         this.loader = new GLTFLoader();
-        this.GRID_OFFSET_X = -330; // Match the large grid position from game.js
+        this.GRID_OFFSET_X = -330;
         this.shipSizes = {
             'bigShip.glb': 5,
             'blurudestroyer.glb': 4,
@@ -19,14 +19,16 @@ class EnemyShips {
             'maritimedrone.glb': 3
         };
         this.fireEffect = new FireEffect(scene);
-
-        // For the update loop
+        this.shipHits = new Map(); // Map to track hits per ship
+        this.hitPositions = new Set(); // Track all hit positions
         this.clock = new THREE.Clock();
-        this.hitPositions = new Set(); // Track hit positions
-
+    }
+    update() {
+        const delta = this.clock.getDelta();
+        this.fireEffect.update(delta); // Make sure this is being called in your game loop
     }
 
-    // Get the enemy player's ID
+    // [Previous methods remain unchanged: getEnemyPlayerId, transformCoordinates, loadEnemyShips, isShipAtPosition]
     getEnemyPlayerId() {
         return new Promise((resolve) => {
             const playersRef = ref(database, 'game/players');
@@ -41,23 +43,21 @@ class EnemyShips {
         });
     }
 
-    // Transform coordinates to match enemy grid
     transformCoordinates(position) {
         return {
-            x: position.x + this.GRID_OFFSET_X, // Adjust for grid offset
+            x: position.x + this.GRID_OFFSET_X,
             y: position.y,
             z: position.z
         };
     }
 
-    // Load enemy ships from Firebase
     async loadEnemyShips() {
         try {
             const enemyId = await this.getEnemyPlayerId();
             if (!enemyId) return;
 
             const enemyShipsRef = ref(database, `game/ships/${enemyId}`);
-            
+
             onValue(enemyShipsRef, (snapshot) => {
                 const shipData = snapshot.val();
                 if (!shipData) return;
@@ -68,7 +68,7 @@ class EnemyShips {
                     this.loader.load(shipInfo.modelPath, (gltf) => {
                         const ship = gltf.scene;
                         const transformedPosition = this.transformCoordinates(shipInfo.position);
-                        
+
                         ship.position.set(
                             transformedPosition.x,
                             shipInfo.position.y,
@@ -87,8 +87,12 @@ class EnemyShips {
                             shipInfo.scale.z
                         );
 
-                        // Store the model path in the ship's userData
                         ship.userData.modelPath = shipInfo.modelPath;
+                        ship.traverse((child) => {
+                            if (child.isMesh) {
+                                child.visible = false;
+                            }
+                        });
 
                         this.scene.add(ship);
                         this.enemyShips.push(ship);
@@ -104,38 +108,29 @@ class EnemyShips {
         const gridSize = 400;
         const divisions = 8;
         const boxSize = gridSize / divisions;
-        
-        // Calculate clicked grid position
-        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
-        const gridZ = Math.floor((position.z + gridSize/2) / boxSize);
-        
-        // Check each enemy ship
+
+        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize / 2) / boxSize);
+        const gridZ = Math.floor((position.z + gridSize / 2) / boxSize);
+
         return this.enemyShips.some(ship => {
-            // Get ship metadata
             const shipPath = ship.userData.modelPath;
             const shipSize = this.shipSizes[shipPath];
             const rotation = ship.rotation.y;
-            
-            // Calculate ship's grid position (center point)
-            const shipGridX = Math.floor((ship.position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
-            const shipGridZ = Math.floor((ship.position.z + gridSize/2) / boxSize);
-            
-            // Special handling for 3boxship
+
+            const shipGridX = Math.floor((ship.position.x - this.GRID_OFFSET_X + gridSize / 2) / boxSize);
+            const shipGridZ = Math.floor((ship.position.z + gridSize / 2) / boxSize);
+
             if (shipPath === '3boxship.glb') {
-                // Check if ship is rotated (approximately π/2 or 3π/2)
-                const isVertical = Math.abs(Math.abs(rotation) - Math.PI/2) < 0.1 || 
-                                 Math.abs(Math.abs(rotation) - (3 * Math.PI/2)) < 0.1;
-    
-                // For 3boxship, we need to check one square before and one after the center
+                const isVertical = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.1 ||
+                    Math.abs(Math.abs(rotation) - (3 * Math.PI / 2)) < 0.1;
+
                 if (isVertical) {
-                    // Ship is oriented vertically
                     for (let offset = -1; offset <= 1; offset++) {
                         if (gridX === shipGridX && gridZ === shipGridZ + offset) {
                             return true;
                         }
                     }
                 } else {
-                    // Ship is oriented horizontally
                     for (let offset = -1; offset <= 1; offset++) {
                         if (gridX === shipGridX + offset && gridZ === shipGridZ) {
                             return true;
@@ -144,53 +139,125 @@ class EnemyShips {
                 }
                 return false;
             }
-            
-            // Handle other ships
-            // Determine if ship is horizontal (rotated around Y axis)
+
             const isHorizontal = Math.abs(Math.cos(rotation)) < 0.5;
-            
-            // Calculate ship's starting position based on its size and orientation
-            const startX = isHorizontal ? shipGridX - Math.floor(shipSize/2) : shipGridX;
-            const startZ = isHorizontal ? shipGridZ : shipGridZ - Math.floor(shipSize/2);
-            
-            // Check if clicked position is within ship's occupied squares
+            const startX = isHorizontal ? shipGridX - Math.floor(shipSize / 2) : shipGridX;
+            const startZ = isHorizontal ? shipGridZ : shipGridZ - Math.floor(shipSize / 2);
+
             for (let i = 0; i < shipSize; i++) {
                 const occupiedX = isHorizontal ? startX + i : shipGridX;
                 const occupiedZ = isHorizontal ? shipGridZ : startZ + i;
-                
+
                 if (gridX === occupiedX && gridZ === occupiedZ) {
                     return true;
                 }
             }
-            
+
             return false;
         });
     }
+
+    // Modified handleHit method
     handleHit(position) {
         const gridSize = 400;
         const divisions = 8;
         const boxSize = gridSize / divisions;
-        
-        // Calculate exact grid position
-        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
-        const gridZ = Math.floor((position.z + gridSize/2) / boxSize);
-        
-        // Convert back to world coordinates for center of grid square
-        const worldX = (gridX * boxSize) + this.GRID_OFFSET_X - gridSize/2 + boxSize/2;
-        const worldZ = (gridZ * boxSize) - gridSize/2 + boxSize/2;
-        
+
+        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize / 2) / boxSize);
+        const gridZ = Math.floor((position.z + gridSize / 2) / boxSize);
         const posKey = `${gridX},${gridZ}`;
+
         if (!this.hitPositions.has(posKey)) {
             this.hitPositions.add(posKey);
-            
-            // Add fire effect at the exact grid position
+
+            // Find which specific ship was hit
+            this.enemyShips.forEach(ship => {
+                // Check if this specific ship was hit at this position
+                const shipPath = ship.userData.modelPath;
+                const shipSize = this.shipSizes[shipPath];
+                
+                if (this.isShipOccupyingPosition(ship, position)) {
+                    // Initialize hit counter for this ship if not exists
+                    if (!this.shipHits.has(ship)) {
+                        this.shipHits.set(ship, new Set());
+                    }
+
+                    // Add this hit position to the ship's hit set
+                    this.shipHits.get(ship).add(posKey);
+
+                    // Only reveal the ship if all its squares have been hit
+                    if (this.shipHits.get(ship).size >= shipSize) {
+                        ship.traverse((child) => {
+                            if (child.isMesh) {
+                                child.visible = true;
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Add fire effect
+            const worldX = (gridX * boxSize) + this.GRID_OFFSET_X - gridSize / 2 + boxSize / 2;
+            const worldZ = (gridZ * boxSize) - gridSize / 2 + boxSize / 2;
             this.fireEffect.addFireEffectAtPosition({
                 x: worldX,
-                y: 5, // Start at water level
+                y: 5,
                 z: worldZ
             }, gridSize, divisions);
             return true;
         }
+        return false;
+    }
+
+    // New helper method to check if a specific ship occupies a position
+    isShipOccupyingPosition(ship, position) {
+        const gridSize = 400;
+        const divisions = 8;
+        const boxSize = gridSize / divisions;
+
+        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize / 2) / boxSize);
+        const gridZ = Math.floor((position.z + gridSize / 2) / boxSize);
+
+        const shipPath = ship.userData.modelPath;
+        const shipSize = this.shipSizes[shipPath];
+        const rotation = ship.rotation.y;
+
+        const shipGridX = Math.floor((ship.position.x - this.GRID_OFFSET_X + gridSize / 2) / boxSize);
+        const shipGridZ = Math.floor((ship.position.z + gridSize / 2) / boxSize);
+
+        if (shipPath === '3boxship.glb') {
+            const isVertical = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.1 ||
+                Math.abs(Math.abs(rotation) - (3 * Math.PI / 2)) < 0.1;
+
+            if (isVertical) {
+                for (let offset = -1; offset <= 1; offset++) {
+                    if (gridX === shipGridX && gridZ === shipGridZ + offset) {
+                        return true;
+                    }
+                }
+            } else {
+                for (let offset = -1; offset <= 1; offset++) {
+                    if (gridX === shipGridX + offset && gridZ === shipGridZ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        const isHorizontal = Math.abs(Math.cos(rotation)) < 0.5;
+        const startX = isHorizontal ? shipGridX - Math.floor(shipSize / 2) : shipGridX;
+        const startZ = isHorizontal ? shipGridZ : shipGridZ - Math.floor(shipSize / 2);
+
+        for (let i = 0; i < shipSize; i++) {
+            const occupiedX = isHorizontal ? startX + i : shipGridX;
+            const occupiedZ = isHorizontal ? shipGridZ : startZ + i;
+
+            if (gridX === occupiedX && gridZ === occupiedZ) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -207,6 +274,7 @@ class EnemyShips {
         });
         this.enemyShips = [];
         this.fireEffect.clearFireEffects();
+        this.shipHits.clear();
         this.hitPositions.clear();
     }
 }
