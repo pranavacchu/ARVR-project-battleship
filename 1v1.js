@@ -13,14 +13,10 @@ class TurnBasedManager {
 
     async initialize(playerId) {
         this.playerId = playerId;
-        
-        // Create turn message element
         this.createTurnMessage();
         
-        // Initialize game state if not exists
         const gameState = await get(this.gameStateRef);
         if (!gameState.exists()) {
-            // First player joins
             await set(this.gameStateRef, {
                 firstPlayer: playerId,
                 secondPlayer: null,
@@ -29,35 +25,40 @@ class TurnBasedManager {
         } else {
             const state = gameState.val();
             if (!state.secondPlayer && state.firstPlayer !== playerId) {
-                // Second player joins
                 await set(this.gameStateRef, {
                     ...state,
                     secondPlayer: playerId,
                     gameStarted: true
                 });
-                // Initialize turn to first player
                 await set(this.turnRef, state.firstPlayer);
             }
         }
 
-        // Listen for turn changes
         this.listenToTurns();
     }
 
     createTurnMessage() {
-        // Create turn message element
         this.turnMessageElement = document.createElement('div');
         this.turnMessageElement.style.position = 'fixed';
-        this.turnMessageElement.style.top = '80px';
+        this.turnMessageElement.style.top = '40px';  // Moved higher up
         this.turnMessageElement.style.left = '50%';
         this.turnMessageElement.style.transform = 'translateX(-50%)';
-        this.turnMessageElement.style.padding = '10px 20px';
-        this.turnMessageElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        this.turnMessageElement.style.color = 'white';
-        this.turnMessageElement.style.borderRadius = '5px';
-        this.turnMessageElement.style.fontFamily = 'Impact, Arial, sans-serif';
-        this.turnMessageElement.style.fontSize = '24px';
+        this.turnMessageElement.style.fontFamily = "'Russo One', sans-serif";  // Changed font
+        this.turnMessageElement.style.fontSize = '34px';
+        this.turnMessageElement.style.fontWeight = '600';
+        this.turnMessageElement.style.textTransform = 'uppercase';
+        this.turnMessageElement.style.letterSpacing = '3px';
+        this.turnMessageElement.style.textShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
         this.turnMessageElement.style.zIndex = '1000';
+        this.turnMessageElement.style.transition = 'all 0.3s ease';
+        
+        
+        // Add Russo One font
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
+        
         document.body.appendChild(this.turnMessageElement);
     }
 
@@ -68,12 +69,33 @@ class TurnBasedManager {
             
             if (this.isMyTurn) {
                 this.turnMessageElement.textContent = "YOUR TURN";
-                this.turnMessageElement.style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
+                this.turnMessageElement.style.background = 'linear-gradient(to bottom, #4ade80, #22c55e)';  // Modern green shade
+                this.turnMessageElement.style.webkitBackgroundClip = 'text';
+                this.turnMessageElement.style.backgroundClip = 'text';
+                this.turnMessageElement.style.color = 'transparent';
+                this.turnMessageElement.style.textShadow = '0 0 12px rgba(74, 222, 128, 0.4)';
+                this.turnMessageElement.style.animation = 'pulse 2s infinite';
             } else {
                 this.turnMessageElement.textContent = "ENEMY'S TURN";
-                this.turnMessageElement.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+                this.turnMessageElement.style.background = 'linear-gradient(to bottom, #ef4444, #dc2626)';  // Modern red shade
+                this.turnMessageElement.style.webkitBackgroundClip = 'text';
+                this.turnMessageElement.style.backgroundClip = 'text';
+                this.turnMessageElement.style.color = 'transparent';
+                this.turnMessageElement.style.textShadow = '0 0 12px rgba(239, 68, 68, 0.4)';
             }
         });
+    
+
+        // Add keyframe animation for pulse effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: translateX(-50%) scale(1); }
+                50% { transform: translateX(-50%) scale(1.05); }
+                100% { transform: translateX(-50%) scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     async handleSquareClick(position) {
@@ -88,10 +110,8 @@ class TurnBasedManager {
             return false;
         }
 
-        // Mark square as clicked
         this.clickedSquares.add(posKey);
 
-        // Switch turn to other player
         const gameState = (await get(this.gameStateRef)).val();
         const nextTurn = this.playerId === gameState.firstPlayer ? 
             gameState.secondPlayer : gameState.firstPlayer;

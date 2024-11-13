@@ -10,6 +10,7 @@ import FireBall from './FireBall.js';
 import gameManager from './gameManager.js';
 import EnemyShips from './EnemyShips.js';
 import turnManager from './1v1.js';
+import winCondition from './win.js';
 
 let enemyShipsManager;
 let enemyText;
@@ -17,6 +18,7 @@ gameManager.initialize().then(async () => {
   gameManager.updatePlayerPage('/game.js');
   await loadStoredShips();
   await turnManager.initialize(gameManager.playerId);
+  await winCondition.initialize(gameManager.playerId);
   // Update this part - store the instance in our global variable
   enemyShipsManager = new EnemyShips(scene, gameManager.playerId);
   await enemyShipsManager.loadEnemyShips();
@@ -220,6 +222,7 @@ async function onMouseClick(event) {
       if (isHit) {
         const fireball = new FireBall(scene, selectedSquare.position, boxSize);
         enemyShipsManager.handleHit(selectedSquare.position);
+        await winCondition.incrementHits();
       }
     }
   }

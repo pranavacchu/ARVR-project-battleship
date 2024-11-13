@@ -186,10 +186,12 @@ class EnemyShips {
             // Add fire effect at the exact grid position
             this.fireEffect.addFireEffectAtPosition({
                 x: worldX,
-                y: 0, // Start at water level
+                y: 5, // Start at water level
                 z: worldZ
             }, gridSize, divisions);
+            return true;
         }
+        return false;
     }
 
     update() {
