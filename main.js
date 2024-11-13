@@ -15,7 +15,7 @@ import maritimeDroneUrl from './maritimedrone.glb?url';
 import gameManager from './gameManager.js';
 
 gameManager.initialize().then(() => {
-    gameManager.updatePlayerPage('/main.js');
+  gameManager.updatePlayerPage('/main.js');
 });
 
 const occupiedCoordinates = {};
@@ -788,11 +788,52 @@ function createOverlay() {
 
   document.body.appendChild(overlay);
 
-  confirmButton.addEventListener('click', () => {
+  confirmButton.addEventListener('click', async () => {
     ShipStore.saveShips(ships);
     console.log('Confirm button clicked');
-    window.location.href = 'game2.html';
+
+    // Disable the confirm button to prevent multiple clicks
+    confirmButton.disabled = true;
+
+    // Show waiting message
+    showWaitingMessage();
+
+    // Set player ready status
+    await gameManager.setPlayerReady(true);
+
+    // Listen for all players to be ready
+    gameManager.onPlayersChange((gameData) => {
+      if (areAllPlayersReady(gameData)) {
+        // Remove waiting message
+        const waitingMessage = document.getElementById('waitingMessage');
+        if (waitingMessage) waitingMessage.remove();
+        // All players are ready
+        window.location.href = 'game2.html';
+      }
+    });
   });
+  function showWaitingMessage() {
+    const waitingMessage = document.createElement('div');
+    waitingMessage.textContent = 'Waiting for other player...';
+    waitingMessage.style.position = 'absolute';
+    waitingMessage.style.top = '50%';
+    waitingMessage.style.left = '50%';
+    waitingMessage.style.transform = 'translate(-50%, -50%)';
+    waitingMessage.style.color = 'white';
+    waitingMessage.style.fontSize = '24px';
+    waitingMessage.style.fontFamily = 'Arial, sans-serif';
+    waitingMessage.style.textShadow = '1px 1px 2px rgba(0,0,0,0.5)';
+    waitingMessage.id = 'waitingMessage';
+    document.body.appendChild(waitingMessage);
+  }
+
+  function areAllPlayersReady(gameData) {
+    const playerEntries = Object.entries(gameData.players || {});
+    if (playerEntries.length !== 2) return false;
+    return playerEntries.every(([playerId, playerData]) => playerData.ready === true);
+  }
+
+
 }
 function getShipPositions() {
   return {

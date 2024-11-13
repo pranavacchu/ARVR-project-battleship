@@ -1,6 +1,8 @@
 import { database } from './firebaseConfig.js';
 import { ref, onValue } from "firebase/database";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import FireEffect from './burn.js'; // Import FireEffect
+import * as THREE from 'three'; // Import Three.js for Clock and other components if needed
 
 class EnemyShips {
     constructor(scene, playerId) {
@@ -16,6 +18,12 @@ class EnemyShips {
             '3boxship.glb': 3,
             'maritimedrone.glb': 3
         };
+        this.fireEffect = new FireEffect(scene);
+
+        // For the update loop
+        this.clock = new THREE.Clock();
+        this.hitPositions = new Set(); // Track hit positions
+
     }
 
     // Get the enemy player's ID
@@ -158,8 +166,37 @@ class EnemyShips {
             return false;
         });
     }
-    
-    // Remove existing enemy ships from scene
+    handleHit(position) {
+        const gridSize = 400;
+        const divisions = 8;
+        const boxSize = gridSize / divisions;
+        
+        // Calculate exact grid position
+        const gridX = Math.floor((position.x - this.GRID_OFFSET_X + gridSize/2) / boxSize);
+        const gridZ = Math.floor((position.z + gridSize/2) / boxSize);
+        
+        // Convert back to world coordinates for center of grid square
+        const worldX = (gridX * boxSize) + this.GRID_OFFSET_X - gridSize/2 + boxSize/2;
+        const worldZ = (gridZ * boxSize) - gridSize/2 + boxSize/2;
+        
+        const posKey = `${gridX},${gridZ}`;
+        if (!this.hitPositions.has(posKey)) {
+            this.hitPositions.add(posKey);
+            
+            // Add fire effect at the exact grid position
+            this.fireEffect.addFireEffectAtPosition({
+                x: worldX,
+                y: 0, // Start at water level
+                z: worldZ
+            }, gridSize, divisions);
+        }
+    }
+
+    update() {
+        const delta = this.clock.getDelta();
+        this.fireEffect.update(delta);
+    }
+
     removeExistingShips() {
         this.enemyShips.forEach(ship => {
             this.scene.remove(ship);
@@ -167,6 +204,8 @@ class EnemyShips {
             if (ship.material) ship.material.dispose();
         });
         this.enemyShips = [];
+        this.fireEffect.clearFireEffects();
+        this.hitPositions.clear();
     }
 }
 
