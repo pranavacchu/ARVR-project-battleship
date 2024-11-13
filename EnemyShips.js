@@ -3,6 +3,9 @@ import { ref, onValue } from "firebase/database";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import FireEffect from './burn.js';
 import * as THREE from 'three';
+import { Vector3 } from 'three';
+import BurnEffect from './burn2.js';  // Adjust path if necessary
+
 
 class EnemyShips {
     constructor(scene, playerId) {
@@ -19,13 +22,14 @@ class EnemyShips {
             'maritimedrone.glb': 3
         };
         this.fireEffect = new FireEffect(scene);
+        this.burnEffect = new BurnEffect(scene);
         this.shipHits = new Map(); // Map to track hits per ship
         this.hitPositions = new Set(); // Track all hit positions
         this.clock = new THREE.Clock();
     }
     update() {
         const delta = this.clock.getDelta();
-        this.fireEffect.update(delta); // Make sure this is being called in your game loop
+        this.fireEffect.update(delta); 
     }
 
     // [Previous methods remain unchanged: getEnemyPlayerId, transformCoordinates, loadEnemyShips, isShipAtPosition]
@@ -175,7 +179,7 @@ class EnemyShips {
                 // Check if this specific ship was hit at this position
                 const shipPath = ship.userData.modelPath;
                 const shipSize = this.shipSizes[shipPath];
-                
+
                 if (this.isShipOccupyingPosition(ship, position)) {
                     // Initialize hit counter for this ship if not exists
                     if (!this.shipHits.has(ship)) {
@@ -199,11 +203,12 @@ class EnemyShips {
             // Add fire effect
             const worldX = (gridX * boxSize) + this.GRID_OFFSET_X - gridSize / 2 + boxSize / 2;
             const worldZ = (gridZ * boxSize) - gridSize / 2 + boxSize / 2;
-            this.fireEffect.addFireEffectAtPosition({
-                x: worldX,
-                y: 5,
-                z: worldZ
-            }, gridSize, divisions);
+            this.fireEffect.addFireEffectAtPosition(
+                new Vector3(worldX, 5, worldZ),
+                gridSize,
+                divisions
+            );
+            this.burnEffect.addBurnEffect(new THREE.Vector3(worldX, 5, worldZ));
             return true;
         }
         return false;
@@ -263,7 +268,8 @@ class EnemyShips {
 
     update() {
         const delta = this.clock.getDelta();
-        this.fireEffect.update(delta);
+        this.fireEffect.update(delta); 
+        this.burnEffect.update(delta); 
     }
 
     removeExistingShips() {

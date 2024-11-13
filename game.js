@@ -222,7 +222,7 @@ async function onMouseClick(event) {
       if (isHit) {
         const fireball = new FireBall(scene, selectedSquare.position, boxSize);
         enemyShipsManager.handleHit(selectedSquare.position);
-        fireball.update()
+        
         await winCondition.incrementHits();
         enemyShipsManager.enemyShips.forEach(ship => {
           if (enemyShipsManager.isShipAtPosition(selectedSquare.position)) {
