@@ -3,16 +3,14 @@
     { "source": "/start", "destination": "/start.html" },
     { "source": "/game", "destination": "/game.html" },
     { "source": "/game2", "destination": "/game2.html" },
-    { "source": "/main", "destination": "/main.js" },
-    { "source": "/:path*.glb", "destination": "/:path*.glb" },
-    { "source": "/:path*.png", "destination": "/:path*.png" }
+    { "source": "/main", "destination": "/main.js" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "headers": [
     {
-      "source": "/:path*.glb",
+      "source": "/(.*).glb",
       "headers": [
         {
           "key": "Content-Type",
@@ -25,7 +23,7 @@
       ]
     },
     {
-      "source": "/:path*.png",
+      "source": "/(.*).png",
       "headers": [
         {
           "key": "Cache-Control",

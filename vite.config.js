@@ -2,8 +2,10 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   base: '/',
+  publicDir: 'public',
   build: {
     outDir: 'dist',
+    copyPublicDir: true,
     rollupOptions: {
       input: {
         main: 'index.html',
@@ -13,14 +15,12 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep all files in root with original names
           if (assetInfo.name.endsWith('.glb') || 
               assetInfo.name.endsWith('.png') || 
-              assetInfo.name.endsWith('.jpg') || 
-              assetInfo.name.endsWith('.jpeg')) {
-            return '[name][extname]'
+              assetInfo.name.endsWith('.jpg')) {
+            // Place these files directly in dist root
+            return `[name][extname]`
           }
-          // Other assets
           return 'assets/[name]-[hash][extname]'
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -28,7 +28,7 @@ export default defineConfig({
       }
     },
     sourcemap: true,
-    assetsInclude: ['**/*.glb', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif']
+    assetsInclude: ['**/*.glb', '**/*.png', '**/*.jpg', '**/*.jpeg']
   },
   server: {
     proxy: {
