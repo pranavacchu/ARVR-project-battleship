@@ -13,11 +13,14 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep .glb files in root and preserve original names
-          if (assetInfo.name.endsWith('.glb')) {
+          // Keep all files in root with original names
+          if (assetInfo.name.endsWith('.glb') || 
+              assetInfo.name.endsWith('.png') || 
+              assetInfo.name.endsWith('.jpg') || 
+              assetInfo.name.endsWith('.jpeg')) {
             return '[name][extname]'
           }
-          // Other assets go to assets directory
+          // Other assets
           return 'assets/[name]-[hash][extname]'
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -25,7 +28,7 @@ export default defineConfig({
       }
     },
     sourcemap: true,
-    assetsInclude: ['**/*.glb']
+    assetsInclude: ['**/*.glb', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif']
   },
   server: {
     proxy: {

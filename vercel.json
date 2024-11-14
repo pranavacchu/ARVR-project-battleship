@@ -4,7 +4,8 @@
     { "source": "/game", "destination": "/game.html" },
     { "source": "/game2", "destination": "/game2.html" },
     { "source": "/main", "destination": "/main.js" },
-    { "source": "/:path*.glb", "destination": "/:path*.glb" }
+    { "source": "/:path*.glb", "destination": "/:path*.glb" },
+    { "source": "/:path*.png", "destination": "/:path*.png" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -17,6 +18,15 @@
           "key": "Content-Type",
           "value": "model/gltf-binary"
         },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/:path*.png",
+      "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
