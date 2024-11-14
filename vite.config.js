@@ -15,12 +15,11 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name.endsWith('.glb') || 
-              assetInfo.name.endsWith('.png') || 
-              assetInfo.name.endsWith('.jpg')) {
-            // Place these files directly in dist root
+          // Keep sprite sheets and 3D models in root with original names
+          if (/\.(png|jpe?g|gif|glb)$/i.test(assetInfo.name)) {
             return `[name][extname]`
           }
+          // Other assets get hashed names
           return 'assets/[name]-[hash][extname]'
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -28,7 +27,9 @@ export default defineConfig({
       }
     },
     sourcemap: true,
-    assetsInclude: ['**/*.glb', '**/*.png', '**/*.jpg', '**/*.jpeg']
+    assetsInclude: ['**/*.glb', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif'],
+    // Prevent asset inlining
+    assetsInlineLimit: 0
   },
   server: {
     proxy: {
