@@ -11,6 +11,7 @@ import gameManager from './gameManager.js';
 import EnemyShips from './EnemyShips.js';
 import turnManager from './1v1.js';
 import winCondition from './win.js';
+import attackTracker from './AttackTracker.js';
 
 let enemyShipsManager;
 let enemyText;
@@ -22,6 +23,8 @@ gameManager.initialize().then(async () => {
   // Update this part - store the instance in our global variable
   enemyShipsManager = new EnemyShips(scene, gameManager.playerId);
   await enemyShipsManager.loadEnemyShips();
+  // After createGridSquares() call
+  attackTracker.initialize(gameManager.playerId, gridSquares);
 });
 
 // Scene, Camera, Renderer setup
@@ -162,30 +165,38 @@ scene.add(largeGrid);
 function createGridSquares() {
   const gridSize = 400; // Match the new grid size
   const boxSize = gridSize / divisions;
-  for (let i = 0; i < divisions; i++) {
-    for (let j = 0; j < divisions; j++) {
-      const squareGeometry = new THREE.PlaneGeometry(boxSize, boxSize);
-      const squareMaterial = new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide,
-      });
-      const square = new THREE.Mesh(squareGeometry, squareMaterial);
-      square.rotation.x = -Math.PI / 2;
-      square.position.set(
-        (i - divisions / 2 + 0.5) * boxSize - 330,
-        0.2,
-        (j - divisions / 2 + 0.5) * boxSize
-      );
-      square.visible = false;
-      scene.add(square);
-      gridSquares.push(square);
+  
+  // Create squares for both enemy grid (left) and player grid (right)
+  const gridOffsets = [-330, 150]; // Left grid and right grid offsets
+  
+  gridOffsets.forEach(offsetX => {
+    for (let i = 0; i < divisions; i++) {
+      for (let j = 0; j < divisions; j++) {
+        const squareGeometry = new THREE.PlaneGeometry(boxSize, boxSize);
+        const squareMaterial = new THREE.MeshBasicMaterial({
+          color: 0x00ffff,
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide,
+        });
+        const square = new THREE.Mesh(squareGeometry, squareMaterial);
+        square.rotation.x = -Math.PI / 2;
+        square.position.set(
+          (i - divisions / 2 + 0.5) * boxSize + offsetX,
+          0.2,
+          (j - divisions / 2 + 0.5) * boxSize
+        );
+        square.visible = false;
+        // Add a custom property to identify which grid this square belongs to
+        square.userData.gridType = offsetX === -330 ? 'enemy' : 'player';
+        scene.add(square);
+        gridSquares.push(square);
+      }
     }
-  }
+  });
 }
 
-createGridSquares();
+createGridSquares()
 
 // Mouse move event handler
 function onMouseMove(event) {
@@ -193,6 +204,7 @@ function onMouseMove(event) {
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
+// Mouse click event handler
 // Mouse click event handler
 async function onMouseClick(event) {
   if (event.button !== 0) return;
@@ -204,37 +216,40 @@ async function onMouseClick(event) {
   const intersects = raycaster.intersectObjects(gridSquares);
 
   if (intersects.length > 0) {
-    const selectedSquare = intersects[0].object;
-    
-    // Check if it's player's turn and square hasn't been clicked
-    const canMakeMove = await turnManager.handleSquareClick(selectedSquare.position);
-    
-    if (canMakeMove) {
-      // Check if there's a ship at this position
-      const isHit = enemyShipsManager.isShipAtPosition(selectedSquare.position);
+      const selectedSquare = intersects[0].object;
+      
+      // Add this check to prevent clicks on player's grid (right grid)
+      if (selectedSquare.userData.gridType === 'player') {
+          return;
+      }
+      
+      // Rest of the existing code remains the same
+      const canMakeMove = await turnManager.handleSquareClick(selectedSquare.position);
+      
+      if (canMakeMove) {
+          const isHit = enemyShipsManager.isShipAtPosition(selectedSquare.position);
+          await attackTracker.recordAttack(selectedSquare.position, isHit);
 
-      // Set color based on hit or miss
-      selectedSquare.material.color.setHex(isHit ? 0xff0000 : 0xffffff);
-      selectedSquare.material.opacity = 0.5;
-      selectedSquare.visible = true;
-
-      // Create fireball effect for hits
-      if (isHit) {
-        const fireball = new FireBall(scene, selectedSquare.position, boxSize);
-        enemyShipsManager.handleHit(selectedSquare.position);
-        
-        await winCondition.incrementHits();
-        enemyShipsManager.enemyShips.forEach(ship => {
-          if (enemyShipsManager.isShipAtPosition(selectedSquare.position)) {
-              ship.traverse((child) => {
-                  if (child.isMesh && child.position.distanceTo(selectedSquare.position) < boxSize) {
-                      child.visible = true;
+          selectedSquare.material.color.setHex(isHit ? 0xff0000 : 0xffffff);
+          selectedSquare.material.opacity = 0.5;
+          selectedSquare.visible = true;
+          
+          if (isHit) {
+              const fireball = new FireBall(scene, selectedSquare.position, boxSize);
+              enemyShipsManager.handleHit(selectedSquare.position);
+              
+              await winCondition.incrementHits();
+              enemyShipsManager.enemyShips.forEach(ship => {
+                  if (enemyShipsManager.isShipAtPosition(selectedSquare.position)) {
+                      ship.traverse((child) => {
+                          if (child.isMesh && child.position.distanceTo(selectedSquare.position) < boxSize) {
+                              child.visible = true;
+                          }
+                      });
                   }
               });
           }
-      });
       }
-    }
   }
 }
 
@@ -350,14 +365,14 @@ function animate() {
 
   if (intersects.length > 0) {
     const hoveredSquare = intersects[0].object;
-    if (hoveredSquare.material.color.getHex() !== 0xff0000 && 
+    if (hoveredSquare.userData.gridType !== 'player' && // Add this condition
+        hoveredSquare.material.color.getHex() !== 0xff0000 && 
         hoveredSquare.material.color.getHex() !== 0xffffff && 
         turnManager.canClick()) {
-      hoveredSquare.material.opacity = 0.5;
-      hoveredSquare.visible = true;
+        hoveredSquare.material.opacity = 0.5;
+        hoveredSquare.visible = true;
     }
-  }
-
+}
   renderer.render(scene, camera);
 }
 // Handle window resizing
