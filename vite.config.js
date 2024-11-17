@@ -15,12 +15,12 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Keep sprite sheets and 3D models in root with original names
+          // Place images in the 'assets' directory with their original names
           if (/\.(png|jpe?g|gif|glb)$/i.test(assetInfo.name)) {
-            return `[name][extname]`
+            return 'assets/[name][extname]';
           }
           // Other assets get hashed names
-          return 'assets/[name]-[hash][extname]'
+          return 'assets/[name]-[hash][extname]';
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js'
