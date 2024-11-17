@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import fireImage from './fire.png';
+import smoke2Image from './smoke2.png';
 
 class BurnEffect {
     constructor(scene) {
@@ -38,12 +40,12 @@ class BurnEffect {
         const textureLoader = new THREE.TextureLoader();
         
         // Load and configure fire textures
-        const fireTexture = textureLoader.load('fire.png');
+        const fireTexture = textureLoader.load(fireImage);
         this.configureTexture(fireTexture);
         this.createMaterialArray(fireTexture, this.fireTextures, this.config.fire);
 
         // Load and configure smoke textures
-        const smokeTexture = textureLoader.load('smoke2.png');
+        const smokeTexture = textureLoader.load(smoke2Image);
         this.configureTexture(smokeTexture);
         this.createMaterialArray(smokeTexture, this.smokeTextures, this.config.smoke);
     }

@@ -1,5 +1,6 @@
 import { TextureLoader, SpriteMaterial, Sprite, RepeatWrapping, AdditiveBlending, Group, Vector3, Color, NormalBlending } from 'three';
-
+import fireImage from './fire.png';
+import smokeImage from './smoke.png';
 class FireEffect {
     constructor(scene) {
         this.scene = scene;
@@ -32,12 +33,12 @@ class FireEffect {
         this.textureLoader = new TextureLoader();
         
         // Load textures with proper wrapping
-        this.fireTexture = this.textureLoader.load('fire.png', (texture) => {
+        this.fireTexture = this.textureLoader.load(fireImage, (texture) => {
             texture.wrapS = texture.wrapT = RepeatWrapping;
             texture.repeat.set(1/8, 1/8);  // 8x8 sprite sheet
         });
         
-        this.smokeTexture = this.textureLoader.load('smoke.png', (texture) => {
+        this.smokeTexture = this.textureLoader.load(smokeImage, (texture) => {
             texture.wrapS = texture.wrapT = RepeatWrapping;
             texture.repeat.set(1/8, 1/8);  // 8x8 sprite sheet
         });
