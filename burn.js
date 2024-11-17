@@ -1,6 +1,6 @@
 import { TextureLoader, SpriteMaterial, Sprite, RepeatWrapping, AdditiveBlending, Group, Vector3, Color, NormalBlending } from 'three';
-import fireImage from './fire.png';
-import smokeImage from './smoke.png';
+import fireImage from '/fire.png';
+import smokeImage from '/smoke.png';
 class FireEffect {
     constructor(scene) {
         this.scene = scene;

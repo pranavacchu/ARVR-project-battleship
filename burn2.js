@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import fireImage from './fire.png';
-import smoke2Image from './smoke2.png';
+import fireImage from '/fire.png';
+import smoke2Image from '/smoke2.png';
 
 class BurnEffect {
     constructor(scene) {
