@@ -9,7 +9,7 @@ class BurnEffect {
         this.fireInstances = [];
         this.smokeInstances = [];
         this.clock = new THREE.Clock();
-        
+
         // Enhanced configuration for more photorealistic fire and smoke
         this.config = {
             fire: {
@@ -37,7 +37,7 @@ class BurnEffect {
 
     loadTextures() {
         const textureLoader = new THREE.TextureLoader();
-        
+
         // Load and configure fire textures
         const fireTexture = textureLoader.load(fireImageUrl);
         this.configureTexture(fireTexture);
@@ -51,12 +51,12 @@ class BurnEffect {
 
     configureTexture(texture) {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(1/8, 1/8);
+        texture.repeat.set(1 / 8, 1 / 8);
         texture.needsUpdate = true;
     }
 
     createMaterialArray(texture, materialArray, config) {
-        const gradientColors = config === this.config.fire ? 
+        const gradientColors = config === this.config.fire ?
             [0xff7700, 0xff9500, 0xffb700, 0xff5500, 0xff3d00] : // Fire gradient
             [0x666666, 0x777777, 0x888888, 0x999999]; // Whiter smoke gradient
 
@@ -79,20 +79,20 @@ class BurnEffect {
             for (let i = 0; i < this.config.fire.layers; i++) {
                 const angleOffset = (2 * Math.PI * i) / this.config.fire.layers;
                 const radius = 5;
-                
+
                 const firePos = new THREE.Vector3(
                     position.x + Math.cos(angleOffset) * radius,
-                    position.y+5, // Set fixed water-level position for fire
+                    position.y + 5, // Set fixed water-level position for fire
                     position.z + Math.sin(angleOffset) * radius
                 );
-                
+
                 const fireSprite = this.createSprite(
                     this.fireTextures[i % this.fireTextures.length],
                     firePos,
                     this.config.fire.scale.min * (1 - i * 0.08), // Reduced scale reduction
                     this.config.fire.opacity.max * (1 - i * 0.08)
                 );
-                
+
                 this.fireInstances.push(this.createEffectInstance(fireSprite, 'fire', angleOffset));
             }
 
@@ -103,14 +103,14 @@ class BurnEffect {
                     position.y + 25 + (i * 5), // Higher starting position
                     position.z + (Math.random() - 0.5) * 15
                 );
-                
+
                 const smokeSprite = this.createSprite(
                     this.smokeTextures[0],
                     smokePos,
                     this.config.smoke.scale.min * (1 + i * 0.25),
                     this.config.smoke.opacity.max * (1 - i * 0.15)
                 );
-                
+
                 this.smokeInstances.push(this.createEffectInstance(smokeSprite, 'smoke'));
             }
         }, this.config.fire.startDelay * 1000);
@@ -151,18 +151,18 @@ class BurnEffect {
             // Enhanced turbulent fire movement
             const turbulence = Math.sin(instance.age * 5) * 0.5;
             const radius = (3 + turbulence) * Math.sin(instance.age * 2.5);
-            instance.sprite.position.x = instance.initialPosition.x + 
+            instance.sprite.position.x = instance.initialPosition.x +
                 Math.cos(instance.angleOffset + instance.age * 1.5) * radius;
-            instance.sprite.position.z = instance.initialPosition.z + 
+            instance.sprite.position.z = instance.initialPosition.z +
                 Math.sin(instance.angleOffset + instance.age * 1.5) * radius;
-            
+
             // Enhanced vertical oscillation
             instance.sprite.position.y = Math.min(
                 instance.initialPosition.y, // Ensure it does not rise above initial water level
                 instance.initialPosition.y + Math.sin(instance.age * 2) * 0.5); // Constant upward drift
 
             // Complex scale variation
-            const scaleOscillation = 
+            const scaleOscillation =
                 Math.sin(instance.age * 3 + instance.scalePhase) * 0.15 +
                 Math.sin(instance.age * 5 + instance.scalePhase) * 0.1;
             const baseScale = this.config.fire.scale.min;
@@ -170,7 +170,7 @@ class BurnEffect {
             instance.sprite.scale.set(currentScale, currentScale * 1.8, 1); // Increased vertical scale
 
             // Dynamic opacity with flickering
-            instance.sprite.material.opacity = 
+            instance.sprite.material.opacity =
                 this.config.fire.opacity.min +
                 (Math.sin(instance.age * 4) * 0.15) +
                 (Math.sin(instance.age * 7) * 0.1);
@@ -187,16 +187,23 @@ class BurnEffect {
             instance.age += deltaTime;
 
             // Enhanced smoke drift
-            const windEffect = Math.sin(instance.age * 0.5) * 4;
-            const spiralRadius = instance.age * 0.8;
-            instance.sprite.position.x = instance.initialPosition.x + 
+            const windEffect = Math.sin(instance.age * 0.5) * 1;
+            const spiralRadius = instance.age * 0.2;
+            instance.sprite.position.x = instance.initialPosition.x +
                 Math.sin(instance.age * 0.8) * spiralRadius + windEffect;
-            instance.sprite.position.z = instance.initialPosition.z + 
+            instance.sprite.position.z = instance.initialPosition.z +
                 Math.cos(instance.age * 0.8) * spiralRadius;
-            
+
             // Enhanced upward movement
-            instance.sprite.position.y = instance.initialPosition.y + 
-                (instance.age * 3); // Increased vertical speed
+            // Define a maximum height relative to the initial position
+            const maxHeight = instance.initialPosition.y + 15; // Smoke won't rise more than 10 units above the initial position
+
+            // Update the vertical position with a reduced speed
+            instance.sprite.position.y = Math.min(
+                maxHeight,
+                instance.initialPosition.y + (instance.age * 0.5) // Reduced vertical speed
+            );
+
 
             // Enhanced smoke expansion
             const expansionFactor = Math.min(1 + instance.age * 0.15, 2.5); // Larger maximum expansion
@@ -218,7 +225,7 @@ class BurnEffect {
     clearBurnEffects() {
         this.clearInstances(this.fireInstances);
         this.clearInstances(this.smokeInstances);
-        
+
         this.fireInstances = [];
         this.smokeInstances = [];
     }

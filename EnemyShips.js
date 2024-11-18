@@ -4,7 +4,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import FireEffect from './burn.js';
 import * as THREE from 'three';
 import { Vector3 } from 'three';
-import BurnEffect from './burn2.js';  // Adjust path if necessary
+import BurnEffect from './burn2.js';  
+import scoreTracker from './scores.js';
+
 
 
 class EnemyShips {
@@ -196,6 +198,8 @@ class EnemyShips {
                                 child.visible = true;
                             }
                         });
+                        scoreTracker.checkShipDestroyed(ship);
+
                     }
                 }
             });
