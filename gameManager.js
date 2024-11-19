@@ -1,26 +1,33 @@
+// Import necessary modules and functions from Firebase and local modules
 import { database } from './firebaseConfig.js';
 import { ref, set, get, onValue, onDisconnect, remove, update } from "firebase/database";
 import ShipStore from './ShipStore.js';
 
+// Define the GameManager class to handle game state and player interactions
 class GameManager {
     constructor() {
+        // Get or generate a unique player ID
         this.playerId = this.getPlayerId();
+
+        // References to Firebase database paths
         this.gameRef = ref(database, "game");
         this.playerRef = ref(database, `game/players/${this.playerId}`);
         this.shipsRef = ref(database, `game/ships/${this.playerId}`);
         this.isInitialized = false;
 
-        // Add page change listener
+        // Add event listeners for page load and navigation changes
         window.addEventListener('load', () => this.handlePageChange());
         window.addEventListener('popstate', () => this.handlePageChange());
     }
 
+    // Method to retrieve an existing player ID or generate a new one
     getPlayerId() {
         let playerId = localStorage.getItem('playerId');
         if (playerId) {
             console.log('Existing Player ID:', playerId);
             return playerId;
         } else {
+            // Generate a new player ID based on the current timestamp
             playerId = `player_${Date.now()}`;
             localStorage.setItem('playerId', playerId);
             console.log('New Player ID:', playerId);
@@ -28,7 +35,7 @@ class GameManager {
         }
     }
 
-
+    // Asynchronous method to initialize the game manager
     async initialize() {
         if (this.isInitialized) return;
 
@@ -36,7 +43,7 @@ class GameManager {
         localStorage.setItem('playerId', this.playerId);
         ShipStore.setPlayerId(this.playerId);
 
-        // Get current game data
+        // Get current game data from Firebase
         const gameData = await this.getCurrentPlayers();
         const players = gameData.players || {};
 
@@ -47,24 +54,24 @@ class GameManager {
             return true;
         }
 
-        // Define active threshold (e.g., 10 seconds)
+        // Define active threshold (e.g., 10 seconds) to filter out inactive players
         const ACTIVE_THRESHOLD = 10000; // 10 seconds
         const now = Date.now();
 
-        // Filter active players
+        // Filter active players based on the timestamp
         const activePlayers = Object.fromEntries(
             Object.entries(players).filter(([playerId, playerData]) => {
                 return (now - playerData.timestamp) < ACTIVE_THRESHOLD;
             })
         );
 
-        // Check player count
+        // Check if the maximum player count has been reached
         if (Object.keys(activePlayers).length >= 3) {
             alert("Game is full. Please try again later.");
             return false;
         }
 
-        // Add player to the game
+        // Add the player to the game in Firebase
         try {
             await set(this.playerRef, {
                 joined: true,
@@ -72,12 +79,12 @@ class GameManager {
                 currentPage: window.location.pathname
             });
 
-            // Set up disconnect cleanup
+            // Set up disconnect cleanup to remove player data when they disconnect
             await onDisconnect(this.playerRef).remove().then(() => {
                 clearInterval(this.heartbeatInterval);
             });
 
-            // Start heartbeat to update timestamp regularly
+            // Start a heartbeat to update the player's timestamp regularly
             this.startHeartbeat();
 
             this.isInitialized = true;
@@ -88,11 +95,15 @@ class GameManager {
             return false;
         }
     }
+
+    // Method to start a heartbeat interval to keep the player's session active
     startHeartbeat() {
         this.heartbeatInterval = setInterval(() => {
             this.updatePlayerTimestamp();
         }, 5000); // Update every 5 seconds
     }
+
+    // Asynchronous method to update the player's timestamp in Firebase
     async updatePlayerTimestamp() {
         if (!this.isInitialized) return;
 
@@ -103,8 +114,7 @@ class GameManager {
         }
     }
 
-
-    // Update player's current page
+    // Update the player's current page in Firebase
     async updatePlayerPage(page) {
         if (!this.isInitialized) return;
 
@@ -119,15 +129,15 @@ class GameManager {
         }
     }
 
-    // Handle page changes
+    // Handle page changes by updating the player's current page
     async handlePageChange() {
         const currentPage = window.location.pathname;
         await this.updatePlayerPage(currentPage);
     }
 
-    // Setup page tracking
+    // Setup page tracking to monitor navigation changes using the history API
     setupPageTracking() {
-        // Update page on navigation using history API
+        // Override the default pushState method
         const originalPushState = history.pushState;
         history.pushState = function () {
             originalPushState.apply(this, arguments);
@@ -135,7 +145,7 @@ class GameManager {
         }.bind(this);
     }
 
-    // Listen for player changes
+    // Listen for changes in the game data (e.g., player join/leave)
     onPlayersChange(callback) {
         onValue(this.gameRef, (snapshot) => {
             const players = snapshot.val() || {};
@@ -143,17 +153,16 @@ class GameManager {
         });
     }
 
-    // Get current players
+    // Asynchronous method to get the current players from Firebase
     async getCurrentPlayers() {
         const snapshot = await get(this.gameRef);
         return snapshot.val() || {};
     }
 
-
-    // Save ship coordinates
+    // Save ship coordinates to Firebase for the player
     async saveShipCoordinates(playerId, ships) {
         try {
-            // Save to Firebase
+            // Save the ships data to Firebase
             await set(this.shipsRef, ships);
             return true;
         } catch (error) {
@@ -161,7 +170,8 @@ class GameManager {
             return false;
         }
     }
-    // Set player's ready status
+
+    // Set the player's ready status in Firebase
     async setPlayerReady(readyStatus) {
         if (!this.isInitialized) return;
 
@@ -172,10 +182,10 @@ class GameManager {
         }
     }
 
-    // Load ship coordinates
+    // Load ship coordinates from Firebase for the player
     async getShipCoordinates(playerId) {
         try {
-            // Load from Firebase
+            // Retrieve the ships data from Firebase
             const snapshot = await get(this.shipsRef);
 
             if (snapshot.exists()) {
@@ -185,15 +195,15 @@ class GameManager {
             return [];
         } catch (error) {
             console.error("Error loading ships:", error);
-            // If all else fails, return empty array
+            // If an error occurs, return an empty array
             return [];
         }
     }
 
-    // Clear stored ship coordinates
+    // Clear stored ship coordinates from Firebase for the player
     async clearShipCoordinates(playerId) {
         try {
-            // Clear from Firebase
+            // Remove the ships data from Firebase
             await set(this.shipsRef, null);
             return true;
         } catch (error) {
@@ -203,6 +213,6 @@ class GameManager {
     }
 }
 
-// Create singleton instance
+// Create a singleton instance of the GameManager class
 const gameManager = new GameManager();
 export default gameManager;

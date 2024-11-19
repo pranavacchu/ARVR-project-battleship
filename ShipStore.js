@@ -1,20 +1,24 @@
 // ShipStore.js
+
+// Import necessary modules from Firebase and local modules
 import { database } from './firebaseConfig.js';
 import { ref, set, get } from "firebase/database";
 import gameManager from './gameManager.js';
 
+// Define the ShipStore class to manage ship data storage and retrieval
 class ShipStore {
     constructor() {
-        this.ships = [];
+        this.ships = []; // Array to hold ship data
+        // Retrieve the player ID from localStorage or set to null if not found
         this.playerId = localStorage.getItem('playerId') || null;
     }
 
-    // Save ship data to both localStorage and Firebase
+    // Method to save ship data to both localStorage and Firebase
     async saveShips(ships) {
         try {
-            // Prepare ship data
+            // Prepare ship data by extracting necessary properties
             const shipData = ships.map(ship => ({
-                modelPath: ship.userData.modelPath,
+                modelPath: ship.userData.modelPath, // Path to the ship model
                 position: {
                     x: ship.position.x,
                     y: ship.position.y,
@@ -32,61 +36,64 @@ class ShipStore {
                 }
             }));
 
-            // Save to localStorage
+            // Save ship data to localStorage as a JSON string
             localStorage.setItem('battleshipData', JSON.stringify(shipData));
 
-            // Save to Firebase if we have a playerId
+            // If a player ID exists, save ship data to Firebase
             if (this.playerId) {
                 await gameManager.saveShipCoordinates(this.playerId, shipData);
             }
 
-            return true;
+            return true; // Indicate success
         } catch (error) {
-            console.error("Error saving ships:", error);
-            return false;
+            console.error("Error saving ships:", error); // Log any errors
+            return false; // Indicate failure
         }
     }
 
-    // Load ships from localStorage and Firebase
+    // Method to load ships from localStorage and Firebase
     async getShips() {
         try {
-            // If we have a playerId, try to get from Firebase first
+            // If a player ID exists, attempt to load ship data from Firebase
             if (this.playerId) {
                 const shipData = await gameManager.getShipCoordinates(this.playerId);
                 if (shipData.length > 0) {
-                    return shipData;
+                    return shipData; // Return ship data from Firebase if available
                 }
             }
 
-            // Fall back to localStorage
+            // Fall back to localStorage if Firebase data is not available
             const localShipData = localStorage.getItem('battleshipData');
-            return localShipData ? JSON.parse(localShipData) : [];
+            return localShipData ? JSON.parse(localShipData) : []; // Parse and return data or an empty array
         } catch (error) {
-            console.error("Error loading ships:", error);
-            // If all else fails, return empty array
-            return [];
+            console.error("Error loading ships:", error); // Log any errors
+            return []; // Return an empty array if an error occurs
         }
     }
 
-    // Clear stored ship data from both localStorage and Firebase
+    // Method to clear stored ship data from both localStorage and Firebase
     async clearShips() {
         try {
+            // Remove ship data from localStorage
             localStorage.removeItem('battleshipData');
             
+            // If a player ID exists, clear ship data from Firebase
             if (this.playerId) {
                 await gameManager.clearShipCoordinates(this.playerId);
             }
-            return true;
+            return true; // Indicate success
         } catch (error) {
-            console.error("Error clearing ships:", error);
-            return false;
+            console.error("Error clearing ships:", error); // Log any errors
+            return false; // Indicate failure
         }
     }
 
+    // Method to set the player ID and store it in localStorage
     setPlayerId(id) {
-        this.playerId = id;
-        localStorage.setItem('playerId', id);
+        this.playerId = id; // Update the player ID
+        localStorage.setItem('playerId', id); // Save the player ID to localStorage
     }
 }
 
+// Export an instance of ShipStore as the default export
 export default new ShipStore();
