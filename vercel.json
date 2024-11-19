@@ -3,7 +3,8 @@
     { "source": "/start", "destination": "/start.html" },
     { "source": "/game", "destination": "/game.html" },
     { "source": "/game2", "destination": "/game2.html" },
-    { "source": "/main", "destination": "/main.js" }
+    { "source": "/main", "destination": "/main.js" },
+    { "source": "/:file.glb", "destination": "/assets/:file.glb" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",

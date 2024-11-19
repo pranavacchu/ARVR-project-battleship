@@ -1,3 +1,4 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 
 export default defineConfig({
@@ -15,11 +16,12 @@ export default defineConfig({
       },
       output: {
         assetFileNames: (assetInfo) => {
-          // Place images in the 'assets' directory with their original names
-          if (/\.(png|jpe?g|gif|glb)$/i.test(assetInfo.name)) {
+          if (/\.(png|jpe?g|gif)$/i.test(assetInfo.name)) {
             return 'assets/[name][extname]';
+          } else if (/\.glb$/i.test(assetInfo.name)) {
+            // Output .glb files to the root directory
+            return '[name][extname]';
           }
-          // Other assets get hashed names
           return 'assets/[name]-[hash][extname]';
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
